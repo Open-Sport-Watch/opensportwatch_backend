@@ -29,3 +29,6 @@ def save_user_tokens(key,payload):
 
 def check_user_already_exist(athlete_id):
     return redis_client.exists(athlete_id)
+
+def get_user(athlete_id):
+    return json.loads(redis_client.get(athlete_id))
