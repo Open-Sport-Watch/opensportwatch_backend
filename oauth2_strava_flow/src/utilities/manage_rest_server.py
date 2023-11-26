@@ -1,4 +1,5 @@
 from utilities.manage_strava_api import get_strava_token
+from utilities.manage_redis import save_user_tokens
 from flask import Flask, request, jsonify
 from waitress import serve
 
@@ -18,7 +19,8 @@ def configure_routes(app):
     def strava_redirect():
         args = request.args
         code = args['code']
-        token = get_strava_token(code)
+        tokens = get_strava_token(code)
+        save_user_tokens(tokens["athlete"]["id"],tokens)
         return jsonify(response_template('The Strava authentication flow has finished successfully!','Ok',200,'STRAVA_OAUTH_FLOW',''))
     
 def init_rest_server(REDIRECT_PORT):
