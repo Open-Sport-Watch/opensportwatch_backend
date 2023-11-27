@@ -25,6 +25,8 @@ def check_redis_conn():
             time.sleep(3)
 
 def save_user_tokens(key,payload):
+    if "athlete" in payload:
+        del payload["athlete"]
     redis_client.set(key,json.dumps(payload))
 
 def check_user_already_exist(athlete_id):
