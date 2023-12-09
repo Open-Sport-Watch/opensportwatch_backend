@@ -2,3 +2,8 @@ flask==2.3.3
 waitress==2.1.2
 redis==5.0.1
 requests==2.31.0
+garmin-fit-sdk==21.126.0
+fitparse==1.2.0
+dash==2.14.2
+plotly==5.18.0
+waitress==2.1.2
