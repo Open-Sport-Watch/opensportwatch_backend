@@ -1,94 +1,18 @@
 import dash
-from dash import dcc
-from dash.dependencies import Input, Output, State
-import pandas as pd
+from dash import dcc, dash_table
 import plotly.graph_objs as go
-import fitparse
 import dash_bootstrap_components as dbc
 from waitress import serve
+from src.manage_fit import extract_data_from_fit
 
-app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
-server = app.server
+
 
 
 # file_name = "plot_fit_activity/resources/Morning_Run_Suunto.fit"
-file_name = "plot_fit_activity/resources/Morning_Run_Garmin.fit"
+# file_name = "plot_fit_activity/resources/Morning_Run_Garmin.fit"
+file_name = "plot_fit_activity/resources/Morning_Trail_Run.fit"
 
-# Load the FIT file
-fitfile = fitparse.FitFile(file_name)
-
-# Iterate over all messages of type "record"
-# (other types include "device_info", "file_creator", "event", etc)
-timestamp=[]
-hr=[]
-power=[]
-altitude=[]
-latitude=[]
-max_latitude = 0
-min_latitude = 360
-longitude=[]
-max_longitude = 0
-min_longitude = 360
-distance=[]
-
-for record in fitfile.get_messages("record"):
-    timestamp_point = None
-    hr_point = None
-    latitude_point = None
-    longitude_point = None
-    power_point = None
-    altitude_point = None
-    distance_point = None
-
-    # Records can contain multiple pieces of data (ex: timestamp, latitude, longitude, etc)
-    for data in record:
-        if data.name == "timestamp":
-            timestamp_point = data.value
-        elif data.name == "heart_rate":
-            hr_point = data.value
-        elif data.name == "position_lat":
-            if not data.raw_value is None:
-                degr = data.raw_value * ( 180 / 2**31 )
-                latitude_point = degr
-                if degr > max_latitude:
-                    max_latitude = degr
-                if degr < min_latitude:
-                    min_latitude = degr
-        elif data.name == "position_long":
-            if not data.raw_value is None:
-                degr = data.raw_value * ( 180 / 2**31 )
-                longitude_point=degr
-                if degr > max_longitude:
-                    max_longitude = degr
-                if degr < min_longitude:
-                    min_longitude = degr
-        elif data.name == "distance":
-            distance_point=data.value
-        elif data.name == "power":
-            power_point = data.value
-        elif data.name == "enhanced_altitude":
-            altitude_point=data.value
-
-    timestamp.append(timestamp_point)
-    hr.append(hr_point)
-    latitude.append(latitude_point)
-    longitude.append(longitude_point)
-    distance.append(distance_point)
-    power.append(power_point)
-    altitude.append(altitude_point)
-
-assert len(timestamp) == len(hr) == len(latitude) == len(longitude) == len(distance) == len(power) ==len(altitude)
-
-df = pd.DataFrame(
-    {
-        "time": timestamp,
-        "latitude": latitude,
-        "longitude": longitude,
-        "altitude": altitude,
-        "heartrate": hr,
-        "distance": distance
-    }
-)
+df, values, aggregates = extract_data_from_fit(file_name)
 
 fig = go.Figure(
     go.Scattermapbox(
@@ -108,15 +32,60 @@ fig.update_layout(
         #     lon=(max_longitude+min_longitude)/2
         # ),
         'bounds' : dict(
-            east = max_longitude+0.1,
-            west = min_longitude-0.1,
-            south = min_latitude-0.1,
-            north = max_latitude+0.1
+            east = values["max_longitude"]+0.1,
+            west = values["min_longitude"]-0.1,
+            south = values["min_latitude"]-0.1,
+            north = values["max_latitude"]+0.1
         )
     },
     margin={"r":0,"t":10,"l":10,"b":0},
     )
 
+fig2 = go.Figure()
+fig2.add_trace(go.Scatter(x=df.time, y=df.heartrate, mode="lines",line=dict(color='rgb(220,20,60)', width=2), name="heartrate", connectgaps=True,))
+fig2.add_trace(go.Scatter(x=df.time, y=df.power, mode="lines",line=dict(color='rgb(34,139,34)', width=2), name="power", connectgaps=True,))
+fig2.add_trace(go.Scatter(x=df.time, y=df.altitude, mode="lines",line=dict(color='rgb(49,130,189)', width=2), name="altitude", connectgaps=True,))
+
+fig2.update_layout(
+    xaxis=dict(
+        showline=True,
+        showgrid=False,
+        showticklabels=True,
+        linecolor='rgb(204, 204, 204)',
+        linewidth=2,
+        ticks='outside',
+        tickfont=dict(
+            family='Arial',
+            size=12,
+            color='rgb(82, 82, 82)',
+        ),
+    ),
+    yaxis=dict(
+        showgrid=False,
+        zeroline=False,
+        showline=True,
+        showticklabels=True,
+    ),
+    autosize=True,
+    margin=dict(
+        l=40,
+        r=0,
+        t=0,
+        b=10
+    ),
+    showlegend=True,
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ),
+    plot_bgcolor='white'
+)
+
+app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
+server = app.server
 
 app.layout = dbc.Row(
     [
@@ -125,55 +94,24 @@ app.layout = dbc.Row(
                 dbc.Col([
                     dcc.Graph(id="mymap", figure=fig, config={'displayModeBar': False})
                 ],
-                style={'width': "25%"},
+                # style={'width': "25%"},
                 ),
                 dbc.Col([
-                    dcc.Textarea(id="text")
-                ]),
+                    dash_table.DataTable(aggregates,style_cell={'text-align': 'center'},page_action="native",page_current= 0, page_size= 12,)
+                ],
+                style={'margin-top': 10}
+                ),
             ],
             
         ),
         dbc.Row(
             [
-                dcc.Graph(id="time-series",config={'displayModeBar': False}),
-                dcc.Dropdown(
-                    id="column",
-                    options=[
-                        {"label": i, "value": i} for i in ["altitude", "heartrate"]
-                    ],
-                    value="altitude",
-                ),
+                dcc.Graph(id="time-series",figure=fig2,config={'displayModeBar': False}),
             ],
             style={'height': "25%"},
         ),
     ]
 )
-
-
-
-
-def lineplot(x, y, title="", axis_type="Linear"):
-    return {
-        "data": [go.Scatter(x=x, y=y, mode="lines")],
-    }
-
-
-@app.callback(
-    Output("time-series", "figure"),
-    [
-        Input("column", "value"),
-        Input("mymap", "selectedData")
-    ],
-)
-def update_timeseries(column, selectedData):
-    # add filter data by selectData points
-    temp = df
-    if selectedData is not None:
-        sel_data = pd.DataFrame(selectedData['points'])
-        temp = df.loc[(df.latitude.isin(sel_data.lat)) & (df.longitude.isin(sel_data.lon))]
-    x = temp["time"]
-    y = temp[column]
-    return lineplot(x, y)
 
 
 if __name__ == "__main__":
