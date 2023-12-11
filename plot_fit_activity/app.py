@@ -13,7 +13,7 @@ from src.manage_fit import extract_data_from_fit
 # file_name = "plot_fit_activity/resources/Morning_Trail_Run.fit"
 file_name = "plot_fit_activity/resources/Pesaro-Cattolica.fit"
 
-df, summary, sub_summary, aggregates, settings = extract_data_from_fit(file_name)
+df, summary, aggregates, settings = extract_data_from_fit(file_name)
 
 fig = go.Figure(
     go.Scattermapbox(
@@ -93,8 +93,7 @@ app.layout = dbc.Row(
         dbc.Row(
             [
                 dbc.Col([
-                    dash_table.DataTable(summary,style_cell={'text-align': 'left','border': 'none'},style_header={'fontSize': 20, 'backgroundColor':'rgb(255,255,255)','fontWeigth':'bold'},style_data={'fontSize':8}),
-                    dash_table.DataTable(sub_summary,style_cell={'text-align': 'left','border': 'none'},style_header={'fontSize': 20, 'backgroundColor':'rgb(255,255,255)','fontWeigth':'bold'},style_data={'fontSize':8}),
+                    dash_table.DataTable(summary,style_cell={'text-align': 'left','border': 'none'},style_header={'fontSize': 20, 'backgroundColor':'rgb(255,255,255)','fontWeigth':'bold','vertical-align': 'bottom'},style_data={'fontSize':10,'vertical-align': 'top'}),
                     dash_table.DataTable(aggregates,style_cell={'text-align': 'center'},fixed_rows={'headers': True},page_action='none', style_table={'height': '320px', 'overflowY': 'auto'}, style_as_list_view=True)
                 ],
                 style={'margin-top': 10,'margin-left': 10}

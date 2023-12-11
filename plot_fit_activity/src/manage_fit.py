@@ -130,18 +130,13 @@ def extract_data_from_fit(file_name):
 
     summary = [
         {
-            f"{tot_distance} km":"distance",
-            f"{str(math.floor(tot_time_seconds/3600)).zfill(2)}:{str(math.floor((tot_time_seconds%3600)/60)).zfill(2)}:{str(math.floor((tot_time_seconds%3600)%60)).zfill(2)}":"time",
-            f"{math.floor(avg_pace)}:{str(round((avg_pace%1)*60)).zfill(2)}/km":"pace"
-        }
-    ]
-
-    sub_summary = [
-        {
-            f"{round(tot_ascent)} m" : "ascendent",
-            f"{round(tot_descendent)} m": "descendent",
+            f"{tot_distance} km":"Distance",
+            f"{str(math.floor(tot_time_seconds/3600)).zfill(2)}:{str(math.floor((tot_time_seconds%3600)/60)).zfill(2)}:{str(math.floor((tot_time_seconds%3600)%60)).zfill(2)}":"Time",
+            f"{math.floor(avg_pace)}:{str(round((avg_pace%1)*60)).zfill(2)}/km":"Average\npace",
+            f"{round(tot_ascent)} m" : "Total\nascendent",
+            f"{round(tot_descendent)} m": "Total\ndescendent",
         }
     ]
 
 
-    return df, summary, sub_summary, aggregates, settings
+    return df, summary, aggregates, settings
