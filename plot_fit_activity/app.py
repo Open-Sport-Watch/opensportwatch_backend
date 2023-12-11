@@ -1,5 +1,5 @@
 import dash
-from dash import dcc, dash_table
+from dash import dcc, dash_table, html
 import plotly.graph_objs as go
 import dash_bootstrap_components as dbc
 from waitress import serve
@@ -13,7 +13,7 @@ from src.manage_fit import extract_data_from_fit
 # file_name = "plot_fit_activity/resources/Morning_Trail_Run.fit"
 file_name = "plot_fit_activity/resources/Pesaro-Cattolica.fit"
 
-df, summary, aggregates, aggregates_columns, settings = extract_data_from_fit(file_name)
+df, activity, summary, aggregates, aggregates_columns, settings = extract_data_from_fit(file_name)
 
 fig = go.Figure(
     go.Scattermapbox(
@@ -93,6 +93,13 @@ app.layout = dbc.Row(
         dbc.Row(
             [
                 dbc.Col([
+                    html.Div(
+                        [
+                            html.Img(src="assets/trail_running.png",width=34,height=34),
+                            html.H3(f'{activity["start"].strftime("%d %B %Y")} {activity["name"]} @ {activity["start"].strftime("%H:%M")}',style={"display": "inline"})
+                        ],
+                    style={'margin-left': 10,"display": "flex"},
+                    ),
                     dash_table.DataTable(summary,style_cell={'text-align': 'center','border': 'none'},style_header={'fontSize': 20, 'backgroundColor':'rgb(255,255,255)','fontWeigth':'bold','vertical-align': 'bottom'},style_data={'fontSize':10,'vertical-align': 'top'}),
                     dash_table.DataTable(data=aggregates,columns=aggregates_columns,merge_duplicate_headers=True,style_cell={'text-align': 'center'},fixed_rows={'headers': True},page_action='none', style_table={'height': '320px', 'overflowY': 'auto'}, style_as_list_view=True)
                 ],
@@ -114,6 +121,7 @@ app.layout = dbc.Row(
         ),
     ]
 )
+print("app running")
 
 
 if __name__ == "__main__":
