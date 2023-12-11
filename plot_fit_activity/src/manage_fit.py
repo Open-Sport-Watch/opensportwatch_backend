@@ -105,7 +105,6 @@ def extract_data_from_fit(file_name):
                 else:
                     tot_descendent += delta
                     descendent+=delta
-                
 
             aggregates.append(
                 {
@@ -117,6 +116,14 @@ def extract_data_from_fit(file_name):
                 }
             )
             last_reset = t
+
+    aggregates_columns=[
+        {"name": ["Intertemps", "Km"], "id": "km"},
+        {"name": ["Intertemps", "Pace"], "id": "pace"},
+        {"name": ["Intertemps", "Bpm"], "id": "bpm"},
+        {"name": ["Intertemps", "Ascent"], "id": "ascent"},
+        {"name": ["Intertemps", "Descent"], "id": "descent"},
+    ]
 
     tot_time_seconds = (df.time.values[-1]-df.time[0]).seconds
     tot_distance = round(df.distance.values[-1]/1000,2)
@@ -139,4 +146,4 @@ def extract_data_from_fit(file_name):
     ]
 
 
-    return df, summary, aggregates, settings
+    return df, summary, aggregates, aggregates_columns, settings
