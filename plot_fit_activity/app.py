@@ -15,6 +15,11 @@ file_name = "plot_fit_activity/resources/Pesaro-Cattolica.fit"
 
 df, activity, summary, aggregates, aggregates_columns, settings = extract_data_from_fit(file_name)
 
+icon = "running.png"
+if activity["type"]=="running":
+    if activity["subtype"]=="trail":
+        icon = "trail_running.png"
+
 fig = go.Figure(
     go.Scattermapbox(
         mode = "lines",
@@ -95,7 +100,7 @@ app.layout = dbc.Row(
                 dbc.Col([
                     html.Div(
                         [
-                            html.Img(src="assets/trail_running.png",width=34,height=34),
+                            html.Img(src=f"assets/{icon}",width=34,height=34),
                             html.H3(f'{activity["start"].strftime("%d %B %Y")} {activity["name"]} @ {activity["start"].strftime("%H:%M")}',style={"display": "inline"})
                         ],
                     style={'margin-left': 10,"display": "flex"},
