@@ -84,34 +84,64 @@ def extract_data_from_fit(file_name):
         }
     )
 
-    values = {
+    kilometers_count = 0
+    last_reset = 0
+    aggregates = []
+    tot_ascent = 0
+    tot_descendent = 0
+    for t,x in enumerate(df.to_dict('records')):
+        if not math.isnan(x["distance"]) and math.floor(x["distance"]/1000)>kilometers_count:
+            kilometers_count += 1
+            delta_seconds = (x["time"]-df.time[last_reset]).seconds
+
+            ascent = 0
+            descendent = 0
+            altitude_segment = list(df.altitude[last_reset:t].dropna())
+            for l in range(0, len(altitude_segment)-1):
+                delta = altitude_segment[l+1] - altitude_segment[l]
+                if delta >0:
+                    tot_ascent += delta
+                    ascent+= delta
+                else:
+                    tot_descendent += delta
+                    descendent+=delta
+                
+
+            aggregates.append(
+                {
+                    'km' : kilometers_count,
+                    'pace': f"{math.floor(delta_seconds/60)}:{str(delta_seconds%60).zfill(2)}/km", 
+                    'bpm': round(mean(df.heartrate[last_reset:t].dropna())),
+                    'ascent': f"{round(ascent)} m",
+                    'descent': f"{round(descendent)} m"
+                }
+            )
+            last_reset = t
+
+    tot_time_seconds = (df.time.values[-1]-df.time[0]).seconds
+    tot_distance = round(df.distance.values[-1]/1000,2)
+    avg_pace = tot_time_seconds/(60*tot_distance)
+    settings = {
         "max_longitude":max_longitude,
         "min_longitude":min_longitude,
         "max_latitude":max_latitude,
         "min_latitude":min_latitude,
     }
 
-    kilometers_count = 0
-    last_reset = 0
-    aggregates = []
-    for t,x in enumerate(df.to_dict('records')):
-        if not math.isnan(x["distance"]) and math.floor(x["distance"]/1000)>kilometers_count:
-            kilometers_count += 1
-            delta_seconds = (x["time"]-df.time[last_reset]).seconds
+    summary = [
+        {
+            f"{tot_distance} km":"distance",
+            f"{str(math.floor(tot_time_seconds/3600)).zfill(2)}:{str(math.floor((tot_time_seconds%3600)/60)).zfill(2)}:{str(math.floor((tot_time_seconds%3600)%60)).zfill(2)}":"time",
+            f"{math.floor(avg_pace)}:{str(round((avg_pace%1)*60)).zfill(2)}/km":"pace"
+        }
+    ]
 
-            dislivello = 0
-            altitude_segment = list(df.altitude[last_reset:t].dropna())
-            for l in range(0, len(altitude_segment)-1):
-                dislivello+= altitude_segment[l+1] - altitude_segment[l]
+    sub_summary = [
+        {
+            f"{round(tot_ascent)} m" : "ascendent",
+            f"{round(tot_descendent)} m": "descendent",
+        }
+    ]
 
-            aggregates.append(
-                {
-                    'km' : kilometers_count,
-                    'passo': f"{math.floor(delta_seconds/60)}:{str(delta_seconds%60).zfill(2)} /km", 
-                    'bpm': round(mean(df.heartrate[last_reset:t].dropna())),
-                    'dislivello': f"{round(dislivello)} m"
-                }
-            )
-            last_reset = t
 
-    return df, values, aggregates
+    return df, summary, sub_summary, aggregates, settings

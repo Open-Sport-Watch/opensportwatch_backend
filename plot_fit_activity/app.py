@@ -10,9 +10,10 @@ from src.manage_fit import extract_data_from_fit
 
 # file_name = "plot_fit_activity/resources/Morning_Run_Suunto.fit"
 # file_name = "plot_fit_activity/resources/Morning_Run_Garmin.fit"
-file_name = "plot_fit_activity/resources/Morning_Trail_Run.fit"
+# file_name = "plot_fit_activity/resources/Morning_Trail_Run.fit"
+file_name = "plot_fit_activity/resources/Pesaro-Cattolica.fit"
 
-df, values, aggregates = extract_data_from_fit(file_name)
+df, summary, sub_summary, aggregates, settings = extract_data_from_fit(file_name)
 
 fig = go.Figure(
     go.Scattermapbox(
@@ -32,13 +33,13 @@ fig.update_layout(
         #     lon=(max_longitude+min_longitude)/2
         # ),
         'bounds' : dict(
-            east = values["max_longitude"]+0.1,
-            west = values["min_longitude"]-0.1,
-            south = values["min_latitude"]-0.1,
-            north = values["max_latitude"]+0.1
+            east = settings["max_longitude"]+0.1,
+            west = settings["min_longitude"]-0.1,
+            south = settings["min_latitude"]-0.1,
+            north = settings["max_latitude"]+0.1
         )
     },
-    margin={"r":0,"t":10,"l":10,"b":0},
+    margin={"r":10,"t":10,"l":10,"b":0},
     )
 
 fig2 = go.Figure()
@@ -69,7 +70,7 @@ fig2.update_layout(
     autosize=True,
     margin=dict(
         l=40,
-        r=0,
+        r=10,
         t=0,
         b=10
     ),
@@ -92,14 +93,16 @@ app.layout = dbc.Row(
         dbc.Row(
             [
                 dbc.Col([
+                    dash_table.DataTable(summary,style_cell={'text-align': 'left','border': 'none'},style_header={'fontSize': 20, 'backgroundColor':'rgb(255,255,255)','fontWeigth':'bold'},style_data={'fontSize':8}),
+                    dash_table.DataTable(sub_summary,style_cell={'text-align': 'left','border': 'none'},style_header={'fontSize': 20, 'backgroundColor':'rgb(255,255,255)','fontWeigth':'bold'},style_data={'fontSize':8}),
+                    dash_table.DataTable(aggregates,style_cell={'text-align': 'center'},fixed_rows={'headers': True},page_action='none', style_table={'height': '320px', 'overflowY': 'auto'}, style_as_list_view=True)
+                ],
+                style={'margin-top': 10,'margin-left': 10}
+                ),
+                dbc.Col([
                     dcc.Graph(id="mymap", figure=fig, config={'displayModeBar': False})
                 ],
                 # style={'width': "25%"},
-                ),
-                dbc.Col([
-                    dash_table.DataTable(aggregates,style_cell={'text-align': 'center'},page_action="native",page_current= 0, page_size= 12,)
-                ],
-                style={'margin-top': 10}
                 ),
             ],
             
