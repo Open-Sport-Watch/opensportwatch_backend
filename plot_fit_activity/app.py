@@ -1,5 +1,5 @@
 import dash
-from dash import dcc, dash_table, html
+from dash import dcc, dash_table, html, Output, Input
 import plotly.graph_objs as go
 import dash_bootstrap_components as dbc
 from waitress import serve
@@ -110,15 +110,36 @@ app.layout = dbc.Row(
                         ],
                     style={'margin-left': 10,"display": "flex"},
                     ),
-                    dash_table.DataTable(summary,style_cell={'text-align': 'center','border': 'none'},style_header={'fontSize': 20, 'backgroundColor':'rgb(255,255,255)','fontWeigth':'bold','vertical-align': 'bottom'},style_data={'fontSize':10,'vertical-align': 'top'}),
-                    dash_table.DataTable(data=aggregates,columns=aggregates_columns,merge_duplicate_headers=True,style_cell={'text-align': 'center'},fixed_rows={'headers': True},page_action='none', style_table={'height': '320px', 'overflowY': 'auto'}, style_as_list_view=True)
+                    dash_table.DataTable(
+                        summary,
+                        cell_selectable=False,
+                        style_cell={'text-align': 'center','border': 'none'},
+                        style_header={'fontSize': 20, 'backgroundColor':'rgb(255,255,255)','fontWeigth':'bold','vertical-align': 'bottom'},
+                        style_data={'fontSize':10,'vertical-align': 'top'}
+                    ),
+                    dash_table.DataTable(
+                        id="intertemps",
+                        data=aggregates,
+                        columns=aggregates_columns,
+                        merge_duplicate_headers=True,
+                        style_cell={'text-align': 'center'},
+                        fixed_rows={'headers': True},
+                        page_action='none',
+                        style_table={'height': '320px', 'overflowY': 'auto'},
+                        style_as_list_view=True,
+                        style_data_conditional=[
+                            {
+                                'if': {'state': 'active'},  # 'active' | 'selected'
+                                
+                            }
+                        ]
+                    )
                 ],
                 style={'margin-top': 10,'margin-left': 10}
                 ),
                 dbc.Col([
                     dcc.Graph(id="mymap", figure=fig, config={'displayModeBar': False})
-                ],
-                # style={'width': "25%"},
+                ]
                 ),
             ],
             
@@ -129,10 +150,23 @@ app.layout = dbc.Row(
             ],
             style={'height': "25%"},
         ),
-    ]
+    ], style={'fluid':True}
 )
 print("app running")
 
+@app.callback(
+  Output("intertemps", "style_data_conditional"),
+  Input("intertemps", "selected_cells"),
+  prevent_initial_call = True
+)
+def update_styles(selected_cells):
+  selected_rows = []
+  for cell in selected_cells:
+      selected_rows.append(cell["row"])
+  print(f"Select intertemps of {selected_rows[0]+1}° km")
+  table_style = [{"if": {"row_index":i}, "background_color":'#ffd9d6','border': '1px solid #ff69b4'} for i in selected_rows]
+
+  return table_style  
 
 if __name__ == "__main__":
     # app.run_server(debug=True)
