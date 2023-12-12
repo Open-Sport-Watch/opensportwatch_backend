@@ -100,8 +100,13 @@ app.layout = dbc.Row(
                 dbc.Col([
                     html.Div(
                         [
-                            html.Img(src=f"assets/{icon}",width=34,height=34),
-                            html.H3(f'{activity["start"].strftime("%d %B %Y")} {activity["name"]} @ {activity["start"].strftime("%H:%M")}',style={"display": "inline"})
+                            html.Img(src=f"assets/{icon}",width=55,height=55,style={"margin-right": 10}),
+                            html.Div(
+                                [
+                                    html.P(f'{activity["start"].strftime("%d %B %Y @ %H:%M")}',style={'vertical-align': 'bottom',"display": "inline","font-style": "italic",'fontSize': 15}),
+                                    html.H3(f'{activity["name"]}',style={'vertical-align': 'top'})
+                                ]
+                            ),
                         ],
                     style={'margin-left': 10,"display": "flex"},
                     ),
