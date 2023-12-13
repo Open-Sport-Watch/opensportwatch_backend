@@ -3,7 +3,6 @@ import pandas as pd
 import fitparse
 import math
 from statistics import mean
-import numpy as np
 import time
 import pickle
 import os
@@ -12,9 +11,9 @@ def extract_data_from_fit(file_name):
 
     if os.path.isfile(f"{file_name}.pickle"):
         with open(f'{file_name}.pickle', 'rb') as file:       
-            messages = pickle.load(file)
-        
-        df, activity, summary, aggregates, aggregates_columns, settings = messages
+            messages = pickle.load(file)    
+        df, activity, summary, aggregates, aggregates_columns, settings, icon = messages
+
     else:
         
         # Load the FIT file
@@ -189,7 +188,12 @@ def extract_data_from_fit(file_name):
             "name": activity_name
         }
 
-        with open(f"{file_name}.pickle", 'wb') as file: 
-            pickle.dump([df, activity, summary, aggregates, aggregates_columns, settings], file) 
+        icon = "running.png"
+        if activity["type"]=="running":
+            if activity["subtype"]=="trail":
+                icon = "trail_running.png"
 
-    return df, activity, summary, aggregates, aggregates_columns, settings
+        with open(f"{file_name}.pickle", 'wb') as file: 
+            pickle.dump([df, activity, summary, aggregates, aggregates_columns, settings, icon], file) 
+
+    return df, activity, summary, aggregates, aggregates_columns, settings, icon
