@@ -140,14 +140,7 @@ def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_c
 
     return main_component
 
-
-def init_app(main_component):
-    app = Dash(external_stylesheets=[dbc.themes.MINTY])
-    server = app.server
-
-    app.layout = main_component
-    print("app running")
-
+def define_app_callback(app):
     @app.callback(
         Output("intertemps", "children"),
         Input("intertemps", "selectedRows"),
@@ -156,5 +149,14 @@ def init_app(main_component):
     def output_selected_rows(selected_rows):
         selected_list = [f"{s['km']}" for s in selected_rows]
         print(f"You selected the km: {', '.join(selected_list)}" if selected_rows else "No selections")
+
+def init_app(main_component):
+    app = Dash(external_stylesheets=[dbc.themes.MINTY])
+    server = app.server
+
+    app.layout = main_component
+    print("App started!")
+
+    define_app_callback(app)
 
     return server
