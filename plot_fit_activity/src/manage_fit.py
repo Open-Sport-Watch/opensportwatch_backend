@@ -150,11 +150,16 @@ def extract_data_from_fit(file_name):
                 last_reset = t
 
         aggregates_columns=[
-            {"name": ["Intertemps", "Km"], "id": "km"},
-            {"name": ["Intertemps", "Pace"], "id": "pace"},
-            {"name": ["Intertemps", "Bpm"], "id": "bpm"},
-            {"name": ["Intertemps", "Ascent"], "id": "ascent"},
-            {"name": ["Intertemps", "Descent"], "id": "descent"},
+            {
+                "headerName": 'Intertemps',
+                "children": [
+                    {"field": "km"},
+                    {"field": "pace"},
+                    {"field": "bpm"},
+                    {"field": "ascent"},
+                    {"field": "descent"},
+                ]
+            }
         ]
 
         tot_time_seconds = (df.time.values[-1]-df.time[0]).seconds
