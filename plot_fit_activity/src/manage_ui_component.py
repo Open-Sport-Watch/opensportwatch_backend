@@ -30,10 +30,10 @@ def get_map_component(settings,df):
             #     lon=(max_longitude+min_longitude)/2
             # ),
             'bounds' : dict(
-                east = settings["max_longitude"]+0.1,
-                west = settings["min_longitude"]-0.1,
-                south = settings["min_latitude"]-0.1,
-                north = settings["max_latitude"]+0.1
+                east = settings["max_longitude"]+0.03,
+                west = settings["min_longitude"]-0.03,
+                south = settings["min_latitude"]-0.03,
+                north = settings["max_latitude"]+0.03
             )
         },
         margin={"r":0,"t":10,"l":10,"b":0},
