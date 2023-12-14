@@ -15,8 +15,10 @@ def get_map_component(settings,df):
             lon = df.longitude,
             lat = df.latitude,
             marker = {'size': 10},
+            text = "all",
             line = {'width': 3},
-            marker_color='red'
+            marker_color='red',
+            hoverinfo='none'
         )
     )
 
@@ -35,7 +37,8 @@ def get_map_component(settings,df):
             )
         },
         margin={"r":0,"t":10,"l":10,"b":0},
-        )
+        showlegend=False,
+    )
     
     map_component=dcc.Graph(id="mymap", figure=fig_map, config={'displayModeBar': False},style={'height': 535})
 
@@ -156,16 +159,35 @@ def define_app_callback(app,latitude_for_km, longitude_for_km):
         selected_list = [f"{s['km']}" for s in selected_rows]
         print(f"You selected the km: {', '.join(selected_list)}" if selected_rows else "No selections")
 
-        fig_map.add_scattermapbox(
-            lat=latitude_for_km[int(selected_list[0])-1],
-            lon=longitude_for_km[int(selected_list[0])-1],
-            mode='lines',
-            marker = {'size': 10},
-            line = {'width': 4},
-            # marker_color='rgb(235, 0, 100)'
-            marker_color='blue'
-        )
+        selected_kms_old_state = list(map(lambda x: x["text"], fig_map.data))
+        selected_kms_old_state.pop(selected_kms_old_state.index('all'))
+        selected_kms_new_state = selected_list
+
+        intersection=list(set(selected_kms_old_state) & set(selected_kms_new_state))
+        add_list= list(set(selected_kms_new_state) - set(intersection))
+        remove_list= list(set(selected_kms_old_state) - set(intersection))
+
+        # for add in add_list:
+        for add in add_list: 
+            fig_map.add_scattermapbox(
+                lat=latitude_for_km[int(add)-1],
+                lon=longitude_for_km[int(add)-1],
+                mode='lines',
+                text=add,
+                marker = {'size': 10},
+                line = {'width': 4},
+                # marker_color='rgb(235, 0, 100)'
+                marker_color='blue',
+                hoverinfo='none'
+            )
+        for remove in remove_list:
+            index_to_remove = list(map(lambda x: x["text"], fig_map.data)).index(remove)
+            new_data = list(fig_map.data)
+            new_data.pop(index_to_remove)
+            fig_map.data=new_data
+
         return fig_map
+
 
 def init_app(main_component,latitude_for_km,longitude_for_km):
     app = Dash(external_stylesheets=[dbc.themes.MINTY])
