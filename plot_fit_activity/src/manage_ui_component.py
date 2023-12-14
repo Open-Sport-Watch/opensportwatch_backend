@@ -4,19 +4,23 @@ import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import Output, Input, Dash
 
-def get_map_component(settings,df):
+fig_map = None
 
-    fig = go.Figure(
+def get_map_component(settings,df):
+    global fig_map
+
+    fig_map = go.Figure(
         go.Scattermapbox(
             mode = "lines",
             lon = df.longitude,
             lat = df.latitude,
             marker = {'size': 10},
             line = {'width': 3},
+            marker_color='red'
         )
     )
 
-    fig.update_layout(
+    fig_map.update_layout(
         mapbox={
             'style': "open-street-map",
             # 'center' : dict(
@@ -33,7 +37,7 @@ def get_map_component(settings,df):
         margin={"r":0,"t":10,"l":10,"b":0},
         )
     
-    map_component=dcc.Graph(id="mymap", figure=fig, config={'displayModeBar': False},style={'height': 535})
+    map_component=dcc.Graph(id="mymap", figure=fig_map, config={'displayModeBar': False},style={'height': 535})
 
     return map_component
 
@@ -140,23 +144,36 @@ def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_c
 
     return main_component
 
-def define_app_callback(app):
+def define_app_callback(app,latitude_for_km, longitude_for_km):
     @app.callback(
-        Output("intertemps", "children"),
+        Output('mymap', 'figure'),
         Input("intertemps", "selectedRows"),
         prevent_initial_call=True,
     )
     def output_selected_rows(selected_rows):
+        global fig_map
+
         selected_list = [f"{s['km']}" for s in selected_rows]
         print(f"You selected the km: {', '.join(selected_list)}" if selected_rows else "No selections")
 
-def init_app(main_component):
+        fig_map.add_scattermapbox(
+            lat=latitude_for_km[int(selected_list[0])-1],
+            lon=longitude_for_km[int(selected_list[0])-1],
+            mode='lines',
+            marker = {'size': 10},
+            line = {'width': 4},
+            # marker_color='rgb(235, 0, 100)'
+            marker_color='blue'
+        )
+        return fig_map
+
+def init_app(main_component,latitude_for_km,longitude_for_km):
     app = Dash(external_stylesheets=[dbc.themes.MINTY])
     server = app.server
 
     app.layout = main_component
     print("App started!")
 
-    define_app_callback(app)
+    define_app_callback(app,latitude_for_km,longitude_for_km)
 
     return server

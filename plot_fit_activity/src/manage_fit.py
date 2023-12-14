@@ -12,7 +12,7 @@ def extract_data_from_fit(file_name):
     if os.path.isfile(f"{file_name}.pickle"):
         with open(f'{file_name}.pickle', 'rb') as file:       
             messages = pickle.load(file)    
-        df, activity, summary, aggregates, aggregates_columns, settings, icon = messages
+        df, activity, summary, aggregates, aggregates_columns, settings, icon, latitude_for_km, longitude_for_km = messages
 
     else:
         
@@ -92,16 +92,32 @@ def extract_data_from_fit(file_name):
                     altitude_point=data.value
 
             timestamp.append(timestamp_point)
-            hr.append(hr_point)
+            hr.append(hr_point)            
+            distance.append(distance_point)
             latitude.append(latitude_point)
             longitude.append(longitude_point)
-            distance.append(distance_point)
+
+
             power.append(power_point)
             altitude.append(altitude_point)
 
         assert len(timestamp) == len(hr) == len(latitude) == len(longitude) == len(distance) == len(power) ==len(altitude)
 
         activity_start=timestamp[0]
+
+        last_kilometer = 0
+        longitude_for_km=[] #* math.floor(distance[-1]/1000)
+        latitude_for_km=[]
+        for x,y in enumerate(distance):
+            if math.floor(distance[x]/1000) > last_kilometer:
+                last_kilometer +=1
+            else:
+                if len(latitude_for_km)<last_kilometer+1:
+                    latitude_for_km.append([latitude[x]])
+                    longitude_for_km.append([longitude[x]])
+                else:
+                    latitude_for_km[last_kilometer].append(latitude[x])
+                    longitude_for_km[last_kilometer].append(longitude[x])
 
         df = pd.DataFrame(
             {
@@ -194,6 +210,6 @@ def extract_data_from_fit(file_name):
                 icon = "trail_running.png"
 
         with open(f"{file_name}.pickle", 'wb') as file: 
-            pickle.dump([df, activity, summary, aggregates, aggregates_columns, settings, icon], file) 
+            pickle.dump([df, activity, summary, aggregates, aggregates_columns, settings, icon, latitude_for_km, longitude_for_km], file) 
 
-    return df, activity, summary, aggregates, aggregates_columns, settings, icon
+    return df, activity, summary, aggregates, aggregates_columns, settings, icon, latitude_for_km, longitude_for_km
