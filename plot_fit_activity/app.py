@@ -10,7 +10,7 @@ file_name = "plot_fit_activity/resources/Pesaro-Cattolica.fit"
 df, activity, summary, aggregates, aggregates_columns, settings, icon, latitude_for_km, longitude_for_km = extract_data_from_fit(file_name)
 
 
-map_component = get_map_component(settings,df)
+map_component = get_map_component(settings,df,latitude_for_km,longitude_for_km)
 graph_component = get_graph_component(df)
 main_component = get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_component,graph_component)
 

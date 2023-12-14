@@ -181,10 +181,10 @@ def extract_data_from_fit(file_name):
         tot_distance = round(df.distance.values[-1]/1000,2)
         avg_pace = tot_time_seconds/(60*tot_distance)
         settings = {
-            "max_longitude":max_longitude,
-            "min_longitude":min_longitude,
-            "max_latitude":max_latitude,
-            "min_latitude":min_latitude,
+            "max_longitude":max_longitude+0.03,
+            "min_longitude":min_longitude-0.03,
+            "max_latitude":max_latitude+0.03,
+            "min_latitude":min_latitude-0.03,
         }
 
         summary = [

@@ -6,41 +6,64 @@ from dash import Output, Input, Dash
 
 fig_map = None
 
-def get_map_component(settings,df):
+def create_figure_map(settings,df,latitude_for_km,longitude_for_km,add_list=[],remove_list=[]):
     global fig_map
 
-    fig_map = go.Figure(
-        go.Scattermapbox(
-            mode = "lines",
-            lon = df.longitude,
-            lat = df.latitude,
+    if not df is None:
+        fig_map = go.Figure(
+            go.Scattermapbox(
+                mode = "lines",
+                lon = df.longitude,
+                lat = df.latitude,
+                marker = {'size': 10},
+                text = "all",
+                line = {'width': 3},
+                marker_color='red',
+                hoverinfo='none'
+            )
+        )
+
+        fig_map.update_layout(
+            mapbox={
+                'style': "open-street-map",
+            },
+            margin={"r":0,"t":10,"l":10,"b":0},
+            showlegend=False,
+        )
+
+    for add in add_list: 
+        fig_map.add_scattermapbox(
+            lat=latitude_for_km[int(add)-1],
+            lon=longitude_for_km[int(add)-1],
+            mode='lines',
+            text=add,
             marker = {'size': 10},
-            text = "all",
-            line = {'width': 3},
-            marker_color='red',
+            line = {'width': 4},
+            # marker_color='rgb(235, 0, 100)'
+            marker_color='blue',
             hoverinfo='none'
         )
-    )
+    for remove in remove_list:
+        index_to_remove = list(map(lambda x: x["text"], fig_map.data)).index(remove)
+        new_data = list(fig_map.data)
+        new_data.pop(index_to_remove)
+        fig_map.data=new_data
 
     fig_map.update_layout(
         mapbox={
-            'style': "open-street-map",
-            # 'center' : dict(
-            #     lat=(max_latitude+min_latitude)/2,
-            #     lon=(max_longitude+min_longitude)/2
-            # ),
-            'bounds' : dict(
-                east = settings["max_longitude"]+0.03,
-                west = settings["min_longitude"]-0.03,
-                south = settings["min_latitude"]-0.03,
-                north = settings["max_latitude"]+0.03
-            )
-        },
-        margin={"r":0,"t":10,"l":10,"b":0},
-        showlegend=False,
+            'bounds' : {
+                'east' : settings["max_longitude"],
+                'west' : settings["min_longitude"],
+                'south' : settings["min_latitude"],
+                'north' : settings["max_latitude"]
+            }
+        }
     )
-    
-    map_component=dcc.Graph(id="mymap", figure=fig_map, config={'displayModeBar': False},style={'height': 535})
+
+    return fig_map
+
+def get_map_component(settings,df,latitude_for_km,longitude_for_km):
+    map_component=dcc.Graph(id="mymap", figure=create_figure_map(settings,df,latitude_for_km,longitude_for_km), config={'displayModeBar': False},style={'height': 535})
 
     return map_component
 
@@ -148,12 +171,15 @@ def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_c
     return main_component
 
 def define_app_callback(app,latitude_for_km, longitude_for_km):
+    
     @app.callback(
-        Output('mymap', 'figure'),
-        Input("intertemps", "selectedRows"),
+        Output("mymap", "figure"),
+        [
+            Input("intertemps", "selectedRows"),
+        ],
         prevent_initial_call=True,
     )
-    def output_selected_rows(selected_rows):
+    def display_intertemps_on_map(selected_rows):
         global fig_map
 
         selected_list = [f"{s['km']}" for s in selected_rows]
@@ -167,26 +193,15 @@ def define_app_callback(app,latitude_for_km, longitude_for_km):
         add_list= list(set(selected_kms_new_state) - set(intersection))
         remove_list= list(set(selected_kms_old_state) - set(intersection))
 
-        # for add in add_list:
-        for add in add_list: 
-            fig_map.add_scattermapbox(
-                lat=latitude_for_km[int(add)-1],
-                lon=longitude_for_km[int(add)-1],
-                mode='lines',
-                text=add,
-                marker = {'size': 10},
-                line = {'width': 4},
-                # marker_color='rgb(235, 0, 100)'
-                marker_color='blue',
-                hoverinfo='none'
-            )
-        for remove in remove_list:
-            index_to_remove = list(map(lambda x: x["text"], fig_map.data)).index(remove)
-            new_data = list(fig_map.data)
-            new_data.pop(index_to_remove)
-            fig_map.data=new_data
+        # no funziona :(
+        settings = {
+            "max_longitude":360,
+            "min_longitude":0,
+            "max_latitude":360,
+            "min_latitude":0,
+        }
 
-        return fig_map
+        return create_figure_map(settings,None,latitude_for_km,longitude_for_km,add_list,remove_list)
 
 
 def init_app(main_component,latitude_for_km,longitude_for_km):
