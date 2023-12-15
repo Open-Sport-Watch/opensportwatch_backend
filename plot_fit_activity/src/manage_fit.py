@@ -119,19 +119,21 @@ def extract_data_from_fit(file_name):
 
         positions=[]
         for x,y in enumerate(df.latitude):
-            if not math.isnan(df.latitude[x]) and not math.isnan(df.longitude[x]):
+            if not math.isnan(df.latitude[x]) and not math.isnan(df.longitude[x]) and  \
+                not df.latitude[x] is None and not df.longitude[x] is None:
                 positions.append([df.latitude[x],df.longitude[x]])
 
         last_kilometer = 0
         positions_for_km=[] #* math.floor(distance[-1]/1000)
         for x,y in enumerate(distance):
-            if math.floor(distance[x]/1000) > last_kilometer:
-                last_kilometer +=1
-            else:
-                if len(positions_for_km)<last_kilometer+1:
-                    positions_for_km.append([[latitude[x],longitude[x]]])
+            if not y is None and not latitude[x] is None and not longitude[x] is None:
+                if math.floor(distance[x]/1000) > last_kilometer:
+                    last_kilometer +=1
                 else:
-                    positions_for_km[last_kilometer].append([latitude[x],longitude[x]])
+                    if len(positions_for_km)<last_kilometer+1:
+                        positions_for_km.append([[latitude[x],longitude[x]]])
+                    else:
+                        positions_for_km[last_kilometer].append([latitude[x],longitude[x]])
 
 
         kilometers_count = 0
