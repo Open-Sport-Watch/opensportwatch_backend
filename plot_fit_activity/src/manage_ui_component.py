@@ -3,69 +3,35 @@ from dash import dcc, dash_table, html
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import Output, Input, Dash
+import dash_leaflet as dl
 
 fig_map = None
 
-def create_figure_map(settings,df,latitude_for_km,longitude_for_km,add_list=[],remove_list=[]):
+def get_map_component(settings,positions):
     global fig_map
 
-    if not df is None:
-        fig_map = go.Figure(
-            go.Scattermapbox(
-                mode = "lines",
-                lon = df.longitude,
-                lat = df.latitude,
-                marker = {'size': 10},
-                text = "all",
-                line = {'width': 3},
-                marker_color='red',
-                hoverinfo='none'
-            )
-        )
+    bounds=[ 
+        [settings["min_latitude"],settings["min_longitude"]],
+        [settings["max_latitude"],settings["max_longitude"]],
+    ]
 
-        fig_map.update_layout(
-            mapbox={
-                'style': "open-street-map",
-            },
-            margin={"r":0,"t":10,"l":10,"b":0},
-            showlegend=False,
-        )
-
-    for add in add_list: 
-        fig_map.add_scattermapbox(
-            lat=latitude_for_km[int(add)-1],
-            lon=longitude_for_km[int(add)-1],
-            mode='lines',
-            text=add,
-            marker = {'size': 10},
-            line = {'width': 4},
-            # marker_color='rgb(235, 0, 100)'
-            marker_color='blue',
-            hoverinfo='none'
-        )
-    for remove in remove_list:
-        index_to_remove = list(map(lambda x: x["text"], fig_map.data)).index(remove)
-        new_data = list(fig_map.data)
-        new_data.pop(index_to_remove)
-        fig_map.data=new_data
-
-    fig_map.update_layout(
-        mapbox={
-            'bounds' : {
-                'east' : settings["max_longitude"],
-                'west' : settings["min_longitude"],
-                'south' : settings["min_latitude"],
-                'north' : settings["max_latitude"]
-            }
-        }
+    children = [
+        dl.TileLayer(id='map-layer'),
+        dl.FullScreenControl(id='screen-control'),
+        dl.Polyline(positions=positions,color='rgb(255,61,65)',id='all-gps-track')
+    ]
+    
+    fig_map = html.Div(
+        dl.Map(
+            children=children,
+            style={'height': '525px',"margin-top": 10,"margin-left": 10},
+            bounds=bounds,
+            attributionControl=False,
+            id="map"
+        ),
+        id="map_container"
     )
-
     return fig_map
-
-def get_map_component(settings,df,latitude_for_km,longitude_for_km):
-    map_component=dcc.Graph(id="mymap", figure=create_figure_map(settings,df,latitude_for_km,longitude_for_km), config={'displayModeBar': False},style={'height': 535})
-
-    return map_component
 
 def get_graph_component(df):
     fig = go.Figure()
@@ -170,10 +136,10 @@ def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_c
 
     return main_component
 
-def define_app_callback(app,latitude_for_km, longitude_for_km):
-    
+def define_app_callback(app,positions_for_km,settings):
+
     @app.callback(
-        Output("mymap", "figure"),
+        Output("map_container", "children"),
         [
             Input("intertemps", "selectedRows"),
         ],
@@ -185,32 +151,61 @@ def define_app_callback(app,latitude_for_km, longitude_for_km):
         selected_list = [f"{s['km']}" for s in selected_rows]
         print(f"You selected the km: {', '.join(selected_list)}" if selected_rows else "No selections")
 
-        selected_kms_old_state = list(map(lambda x: x["text"], fig_map.data))
-        selected_kms_old_state.pop(selected_kms_old_state.index('all'))
+        selected_kms_old_state = list(map(lambda x: x.id, fig_map.children.children))
+        selected_kms_old_state.pop(selected_kms_old_state.index('map-layer'))
+        selected_kms_old_state.pop(selected_kms_old_state.index('screen-control'))
+        selected_kms_old_state.pop(selected_kms_old_state.index('all-gps-track'))
         selected_kms_new_state = selected_list
 
         intersection=list(set(selected_kms_old_state) & set(selected_kms_new_state))
         add_list= list(set(selected_kms_new_state) - set(intersection))
         remove_list= list(set(selected_kms_old_state) - set(intersection))
 
-        # no funziona :(
-        settings = {
-            "max_longitude":360,
-            "min_longitude":0,
-            "max_latitude":360,
-            "min_latitude":0,
-        }
+        for add in add_list:
+            fig_map.children.children.append(dl.Polyline(positions=positions_for_km[int(add)-1],id=add,color='blue'))
 
-        return create_figure_map(settings,None,latitude_for_km,longitude_for_km,add_list,remove_list)
+        for remove in remove_list:
+            del fig_map.children.children[list(map(lambda x: x.id, fig_map.children.children)).index(remove)]
+        
+        if selected_rows:
+            min_latitude=360
+            min_longitude=360
+            max_latitude=0
+            max_longitude=0
+        else:
+            min_latitude=settings["min_latitude"]
+            min_longitude=settings["min_longitude"]
+            max_latitude=settings["max_latitude"]
+            max_longitude=settings["max_longitude"]
+        
+
+        for child in fig_map.children.children:
+            if child._type == 'Polyline' and child.id != 'all-gps-track':
+                for p in child.positions:
+                    if p[0]<min_latitude:
+                        min_latitude=p[0]
+                    if p[0]>max_latitude:
+                        max_latitude=p[0]
+                    if p[1]<min_longitude:
+                        min_longitude=p[1]
+                    if p[1]>max_longitude:
+                        max_longitude=p[1]
+
+        fig_map.children.bounds=[ 
+            [min_latitude,min_longitude],
+            [max_latitude,max_longitude],
+        ]
+
+        return fig_map
 
 
-def init_app(main_component,latitude_for_km,longitude_for_km):
+def init_app(main_component,positions_for_km,settings):
     app = Dash(external_stylesheets=[dbc.themes.MINTY])
     server = app.server
 
     app.layout = main_component
     print("App started!")
 
-    define_app_callback(app,latitude_for_km,longitude_for_km)
+    define_app_callback(app,positions_for_km,settings)
 
     return server

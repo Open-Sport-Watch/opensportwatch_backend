@@ -12,7 +12,7 @@ def extract_data_from_fit(file_name):
     if os.path.isfile(f"{file_name}.pickle"):
         with open(f'{file_name}.pickle', 'rb') as file:       
             messages = pickle.load(file)    
-        df, activity, summary, aggregates, aggregates_columns, settings, icon, latitude_for_km, longitude_for_km = messages
+        df, positions, positions_for_km, activity, summary, aggregates, aggregates_columns, settings, icon= messages
 
     else:
         
@@ -105,20 +105,6 @@ def extract_data_from_fit(file_name):
 
         activity_start=timestamp[0]
 
-        last_kilometer = 0
-        longitude_for_km=[] #* math.floor(distance[-1]/1000)
-        latitude_for_km=[]
-        for x,y in enumerate(distance):
-            if math.floor(distance[x]/1000) > last_kilometer:
-                last_kilometer +=1
-            else:
-                if len(latitude_for_km)<last_kilometer+1:
-                    latitude_for_km.append([latitude[x]])
-                    longitude_for_km.append([longitude[x]])
-                else:
-                    latitude_for_km[last_kilometer].append(latitude[x])
-                    longitude_for_km[last_kilometer].append(longitude[x])
-
         df = pd.DataFrame(
             {
                 "time": timestamp,
@@ -130,6 +116,23 @@ def extract_data_from_fit(file_name):
                 "distance": distance
             }
         )
+
+        positions=[]
+        for x,y in enumerate(df.latitude):
+            if not math.isnan(df.latitude[x]) and not math.isnan(df.longitude[x]):
+                positions.append([df.latitude[x],df.longitude[x]])
+
+        last_kilometer = 0
+        positions_for_km=[] #* math.floor(distance[-1]/1000)
+        for x,y in enumerate(distance):
+            if math.floor(distance[x]/1000) > last_kilometer:
+                last_kilometer +=1
+            else:
+                if len(positions_for_km)<last_kilometer+1:
+                    positions_for_km.append([[latitude[x],longitude[x]]])
+                else:
+                    positions_for_km[last_kilometer].append([latitude[x],longitude[x]])
+
 
         kilometers_count = 0
         last_reset = 0
@@ -181,10 +184,10 @@ def extract_data_from_fit(file_name):
         tot_distance = round(df.distance.values[-1]/1000,2)
         avg_pace = tot_time_seconds/(60*tot_distance)
         settings = {
-            "max_longitude":max_longitude+0.03,
-            "min_longitude":min_longitude-0.03,
-            "max_latitude":max_latitude+0.03,
-            "min_latitude":min_latitude-0.03,
+            "max_longitude":max_longitude,
+            "min_longitude":min_longitude,
+            "max_latitude":max_latitude,
+            "min_latitude":min_latitude,
         }
 
         summary = [
@@ -210,6 +213,6 @@ def extract_data_from_fit(file_name):
                 icon = "trail_running.png"
 
         with open(f"{file_name}.pickle", 'wb') as file: 
-            pickle.dump([df, activity, summary, aggregates, aggregates_columns, settings, icon, latitude_for_km, longitude_for_km], file) 
+            pickle.dump([df, positions, positions_for_km, activity, summary, aggregates, aggregates_columns, settings, icon], file) 
 
-    return df, activity, summary, aggregates, aggregates_columns, settings, icon, latitude_for_km, longitude_for_km
+    return df, positions, positions_for_km, activity, summary, aggregates, aggregates_columns, settings, icon
