@@ -66,6 +66,7 @@ def get_graph_component(df):
             # ticks='outside'
         ),
         yaxis=dict(
+            fixedrange= True,
             showgrid=True,
             zeroline=True,
             showline=True,
@@ -77,6 +78,7 @@ def get_graph_component(df):
             ticksuffix=' m'
         ),
         yaxis2=dict(
+            fixedrange= True,
             showgrid=False,
             zeroline=True,
             showline=True,
@@ -201,7 +203,7 @@ def define_app_callback(app,positions_for_km,altitude_for_km,time_for_km,setting
 
         for add in add_list:
             fig_map.children.children.append(dl.Polyline(positions=positions_for_km[int(add)-1],id=add,color=selected_color))
-            fig_timeseries.add_trace(go.Scatter(x=time_for_km[int(add)-1], y=altitude_for_km[int(add)-1], fill='tozeroy', fillcolor=selected_color_opacity, mode="lines",line=dict(color=selected_color_opacity, width=2), name=add, connectgaps=False))
+            fig_timeseries.add_trace(go.Scatter(x=time_for_km[int(add)-1], y=altitude_for_km[int(add)-1], fill='tozeroy', fillcolor=selected_color_opacity, mode="lines",line=dict(color=selected_color_opacity, width=2), name=add, connectgaps=False,hoverinfo='skip'))
 
         for remove in remove_list:
             del fig_map.children.children[list(map(lambda x: x.id, fig_map.children.children)).index(remove)]
