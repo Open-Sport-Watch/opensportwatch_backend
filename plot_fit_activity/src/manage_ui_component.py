@@ -11,6 +11,12 @@ import numpy as np
 fig_map = None
 fig_timeseries= None
 
+main_color='rgb(255,61,65)'
+selected_color='rgb(8,102,255)'
+selected_color_opacity='rgba(8,102,255,0.4)'
+main_text_color='rgb(24, 29, 31)'
+font_family='Montserrat,-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif'
+
 def get_map_component(settings,positions):
     global fig_map
 
@@ -22,13 +28,13 @@ def get_map_component(settings,positions):
     children = [
         dl.TileLayer(id='map-layer'),
         dl.FullScreenControl(id='screen-control'),
-        dl.Polyline(positions=positions,color='rgb(255,61,65)',id='all-gps-track')
+        dl.Polyline(positions=positions,color=main_color,id='all-gps-track')
     ]
     
     fig_map = html.Div(
         dl.Map(
             children=children,
-            style={'height': '525px',"margin-top": 10,"margin-left": 10},
+            style={'height': '520px',"margin-top": 10,"margin-left": 10},
             bounds=bounds,
             attributionControl=False,
             id="map"
@@ -41,13 +47,14 @@ def get_graph_component(df):
     global fig_timeseries
     fig_timeseries = make_subplots(specs=[[{"secondary_y": True}]])
     fig_timeseries.add_trace(go.Scatter(x=df.time, y=df.altitude, fill='tozeroy', fillcolor='rgba(224,224,224,0.5)', mode="lines",line=dict(color='rgb(160,160,160)', width=2), name="altitude", connectgaps=False))
-    fig_timeseries.add_trace(go.Scatter(x=df.time, y=df.pace_smoot, mode="lines",line=dict(color='rgb(220,20,60)', width=2), name="pace", connectgaps=False),secondary_y=True)
+    fig_timeseries.add_trace(go.Scatter(x=df.time, y=df.pace_smoot, mode="lines",line=dict(color=main_color, width=2), name="pace", connectgaps=False),secondary_y=True)
     
     y2_scale=list(np.arange(math.floor(df.pace_smoot.min()),math.ceil(df.pace_smoot.max()),(df.pace_smoot.max()-df.pace_smoot.min())/6))
     y2_scale_text=[f"{math.floor(y2)}:{str(round((y2%1)*60)).zfill(2)}/km" for y2 in y2_scale]
 
 
     fig_timeseries.update_layout(
+        font_family=font_family,
         xaxis=dict(
             showline=False,
             zeroline=True,
@@ -117,8 +124,8 @@ def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_c
                                 html.Img(src=f"assets/{icon}",width=55,height=55,style={"margin-right": 10}),
                                 html.Div(
                                     [
-                                        html.P(f'{activity["start"].strftime("%d %B %Y @ %H:%M")}',style={'vertical-align': 'bottom',"display": "inline","font-style": "italic",'fontSize': 15}),
-                                        html.H3(f'{activity["name"]}',style={'vertical-align': 'top'})
+                                        html.P(f'{activity["start"].strftime("%d %B %Y @ %H:%M")}',style={'vertical-align': 'bottom',"display": "inline","font-family":font_family,"font-style": "normal",'fontSize': 10}),
+                                        html.H3(f'{activity["name"]}',style={'vertical-align': 'top','color':main_text_color,'font-weight':'bold','margin-bottom':0})
                                     ]
                                 ),
                             ],
@@ -128,12 +135,13 @@ def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_c
                             summary,
                             cell_selectable=False,
                             style_cell={'text-align': 'center','border': 'none'},
-                            style_header={'fontSize': 20, 'backgroundColor':'rgb(255,255,255)','fontWeigth':'bold','vertical-align': 'bottom'},
-                            style_data={'fontSize':10,'vertical-align': 'top'}
+                            style_header={'fontSize': 20, 'backgroundColor':'rgb(255,255,255)','color':main_text_color,'font-weight':'normal','vertical-align': 'bottom','font-family':font_family},
+                            style_data={'fontSize':10,'vertical-align': 'top','font-family':font_family}
                         ),
                         dag.AgGrid(
                             id="intertemps",
                             rowData=aggregates,
+                            className="ag-theme-alpine selection compact",
                             columnDefs=aggregates_columns,
                             defaultColDef={"resizable": False, "sortable": False, "filter": False},
                             columnSize="responsiveSizeToFit",
@@ -158,7 +166,7 @@ def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_c
                 
             ),
             dbc.Row([graph_component],
-                style={'height': "410px",'margin-top': 10},
+                style={'height': "410px",'margin-top': 10,'margin-left': 10},
             ),
         ]
     )
@@ -191,8 +199,8 @@ def define_app_callback(app,positions_for_km,altitude_for_km,time_for_km,setting
         remove_list= list(set(selected_kms_old_state) - set(intersection))
 
         for add in add_list:
-            fig_map.children.children.append(dl.Polyline(positions=positions_for_km[int(add)-1],id=add,color='blue'))
-            fig_timeseries.add_trace(go.Scatter(x=time_for_km[int(add)-1], y=altitude_for_km[int(add)-1], fill='tozeroy', fillcolor='rgba(160,160,160,0.6)', mode="lines",line=dict(color='rgb(160,160,160)', width=2), name=add, connectgaps=False))
+            fig_map.children.children.append(dl.Polyline(positions=positions_for_km[int(add)-1],id=add,color=selected_color))
+            fig_timeseries.add_trace(go.Scatter(x=time_for_km[int(add)-1], y=altitude_for_km[int(add)-1], fill='tozeroy', fillcolor=selected_color_opacity, mode="lines",line=dict(color=selected_color_opacity, width=2), name=add, connectgaps=False))
 
         for remove in remove_list:
             del fig_map.children.children[list(map(lambda x: x.id, fig_map.children.children)).index(remove)]

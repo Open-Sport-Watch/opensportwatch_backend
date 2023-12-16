@@ -148,6 +148,7 @@ def extract_data_from_fit(file_name):
         positions_for_km=[] #* math.floor(distance[-1]/1000)
         altitude_for_km=[]
         time_for_km=[]
+        max_altitude = max(altitude)
         for x,y in enumerate(distance):
             if not y is None and not latitude[x] is None and not longitude[x] is None:
                 if math.floor(distance[x]/1000) > last_kilometer:
@@ -155,11 +156,11 @@ def extract_data_from_fit(file_name):
                 else:
                     if len(positions_for_km)<last_kilometer+1:
                         positions_for_km.append([[latitude[x],longitude[x]]])
-                        altitude_for_km.append([altitude[x]])
+                        altitude_for_km.append([max_altitude])
                         time_for_km.append([timestamp[x]])
                     else:
                         positions_for_km[last_kilometer].append([latitude[x],longitude[x]])
-                        altitude_for_km[last_kilometer].append(altitude[x])
+                        altitude_for_km[last_kilometer].append(max_altitude)
                         time_for_km[last_kilometer].append(timestamp[x])
 
 

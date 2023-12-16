@@ -1,0 +1,18 @@
+.ag-theme-alpine {
+  --ag-selected-row-background-color: rgba(8,102,255,0.4) !important;
+  --ag-font-family: Montserrat,-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif !important;
+}
+
+.ag-theme-alpine.compact {
+  --ag-grid-size: 3px !important;
+}
+
+.ag-header-group-cell-label {
+  justify-content: center !important;
+}
+
+.ag-cell-label {
+  justify-content: center !important;
+}
+
+

@@ -21,5 +21,5 @@ if __name__ == "__main__":
     # app.run_server(debug=True)
     # visit http://127.0.0.1:8050/ in your web browser.
 
-    serve(server,host="localhost",port=8080)
+    serve(server,host="0.0.0.0",port=8080)
     
