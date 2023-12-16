@@ -5,6 +5,8 @@ import dash_bootstrap_components as dbc
 from dash import Output, Input, Dash
 import dash_leaflet as dl
 from plotly.subplots import make_subplots
+import math
+import numpy as np
 
 fig_map = None
 fig_timeseries= None
@@ -39,8 +41,11 @@ def get_graph_component(df):
     global fig_timeseries
     fig_timeseries = make_subplots(specs=[[{"secondary_y": True}]])
     fig_timeseries.add_trace(go.Scatter(x=df.time, y=df.altitude, fill='tozeroy', fillcolor='rgba(224,224,224,0.5)', mode="lines",line=dict(color='rgb(160,160,160)', width=2), name="altitude", connectgaps=False))
-    fig_timeseries.add_trace(go.Scatter(x=df.time, y=df.heartrate, mode="lines",line=dict(color='rgb(220,20,60)', width=2), name="heartrate", connectgaps=False),secondary_y=True)
+    fig_timeseries.add_trace(go.Scatter(x=df.time, y=df.pace_smoot, mode="lines",line=dict(color='rgb(220,20,60)', width=2), name="pace", connectgaps=False),secondary_y=True)
     
+    y2_scale=list(np.arange(math.floor(df.pace_smoot.min()),math.ceil(df.pace_smoot.max()),(df.pace_smoot.max()-df.pace_smoot.min())/6))
+    y2_scale_text=[f"{math.floor(y2)}:{str(round((y2%1)*60)).zfill(2)}/km" for y2 in y2_scale]
+
 
     fig_timeseries.update_layout(
         xaxis=dict(
@@ -73,7 +78,10 @@ def get_graph_component(df):
             showticklabels=True,
             # showticksuffix='last',
             tickcolor='rgb(224,0,0)',
-            ticksuffix=' bpm'
+            # ticksuffix=' /km',
+            autorange="reversed",
+            tickvals=y2_scale,
+            ticktext=y2_scale_text,
         ),
         autosize=True,
         margin=dict(

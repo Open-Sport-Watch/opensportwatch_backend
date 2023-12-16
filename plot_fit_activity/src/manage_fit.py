@@ -36,6 +36,8 @@ def extract_data_from_fit(file_name):
         max_longitude = 0
         min_longitude = 360
         distance=[]
+        speed=[]
+        pace=[]
 
         t = time.time()
         messages = fitfile.messages
@@ -61,6 +63,8 @@ def extract_data_from_fit(file_name):
             power_point = None
             altitude_point = None
             distance_point = None
+            speed_point = None
+            pace_point = None
 
             # Records can contain multiple pieces of data (ex: timestamp, latitude, longitude, etc)
             for data in record:
@@ -90,13 +94,20 @@ def extract_data_from_fit(file_name):
                     power_point = data.value
                 elif data.name == "enhanced_altitude":
                     altitude_point=data.value
+                elif data.name == "enhanced_speed":
+                    speed_point=data.value
+                    if data.value == 0:
+                        pace_point = None
+                    else:
+                        pace_point= 1000/(data.value * 60)
 
             timestamp.append(timestamp_point)
             hr.append(hr_point)            
             distance.append(distance_point)
             latitude.append(latitude_point)
             longitude.append(longitude_point)
-
+            speed.append(speed_point)
+            pace.append(pace_point)
 
             power.append(power_point)
             altitude.append(altitude_point)
@@ -104,6 +115,13 @@ def extract_data_from_fit(file_name):
         assert len(timestamp) == len(hr) == len(latitude) == len(longitude) == len(distance) == len(power) ==len(altitude)
 
         activity_start=timestamp[0]
+
+        df1 = pd.DataFrame(
+            {
+                "pace": pace
+            }
+        )
+        pace_smoot = df1.pace.rolling(window=90, min_periods=10, center=True).median()
 
         df = pd.DataFrame(
             {
@@ -113,7 +131,10 @@ def extract_data_from_fit(file_name):
                 "altitude": altitude,
                 "heartrate": hr,
                 "power": power,
-                "distance": distance
+                "distance": distance,
+                "speed": speed,
+                "pace": pace,
+                "pace_smoot": pace_smoot
             }
         )
 

@@ -4,8 +4,8 @@ from src.manage_ui_component import get_map_component, get_graph_component, get_
 
 # file_name = "plot_fit_activity/resources/Morning_Run_Suunto.fit"
 # file_name = "plot_fit_activity/resources/Morning_Run_Garmin.fit"
-# file_name = "plot_fit_activity/resources/Morning_Trail_Run.fit"
-file_name = "plot_fit_activity/resources/Pesaro-Cattolica.fit"
+file_name = "plot_fit_activity/resources/Morning_Trail_Run.fit"
+# file_name = "plot_fit_activity/resources/Pesaro-Cattolica.fit"
 
 df, positions, positions_for_km, altitude_for_km, time_for_km, activity, summary, aggregates, aggregates_columns, settings, icon = extract_data_from_fit(file_name)
 
