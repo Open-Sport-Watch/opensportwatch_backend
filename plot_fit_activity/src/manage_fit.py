@@ -12,7 +12,7 @@ def extract_data_from_fit(file_name):
     if os.path.isfile(f"{file_name}.pickle"):
         with open(f'{file_name}.pickle', 'rb') as file:       
             messages = pickle.load(file)    
-        df, positions, positions_for_km, activity, summary, aggregates, aggregates_columns, settings, icon= messages
+        df, positions, positions_for_km, altitude_for_km, time_for_km, activity, summary, aggregates, aggregates_columns, settings, icon= messages
 
     else:
         
@@ -125,6 +125,8 @@ def extract_data_from_fit(file_name):
 
         last_kilometer = 0
         positions_for_km=[] #* math.floor(distance[-1]/1000)
+        altitude_for_km=[]
+        time_for_km=[]
         for x,y in enumerate(distance):
             if not y is None and not latitude[x] is None and not longitude[x] is None:
                 if math.floor(distance[x]/1000) > last_kilometer:
@@ -132,8 +134,12 @@ def extract_data_from_fit(file_name):
                 else:
                     if len(positions_for_km)<last_kilometer+1:
                         positions_for_km.append([[latitude[x],longitude[x]]])
+                        altitude_for_km.append([altitude[x]])
+                        time_for_km.append([timestamp[x]])
                     else:
                         positions_for_km[last_kilometer].append([latitude[x],longitude[x]])
+                        altitude_for_km[last_kilometer].append(altitude[x])
+                        time_for_km[last_kilometer].append(timestamp[x])
 
 
         kilometers_count = 0
@@ -215,6 +221,6 @@ def extract_data_from_fit(file_name):
                 icon = "trail_running.png"
 
         with open(f"{file_name}.pickle", 'wb') as file: 
-            pickle.dump([df, positions, positions_for_km, activity, summary, aggregates, aggregates_columns, settings, icon], file) 
+            pickle.dump([df, positions, positions_for_km, altitude_for_km, time_for_km, activity, summary, aggregates, aggregates_columns, settings, icon], file) 
 
-    return df, positions, positions_for_km, activity, summary, aggregates, aggregates_columns, settings, icon
+    return df, positions, positions_for_km, altitude_for_km, time_for_km, activity, summary, aggregates, aggregates_columns, settings, icon

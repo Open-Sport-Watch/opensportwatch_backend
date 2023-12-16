@@ -4,8 +4,10 @@ import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import Output, Input, Dash
 import dash_leaflet as dl
+from plotly.subplots import make_subplots
 
 fig_map = None
+fig_timeseries= None
 
 def get_map_component(settings,positions):
     global fig_map
@@ -34,19 +36,20 @@ def get_map_component(settings,positions):
     return fig_map
 
 def get_graph_component(df):
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df.time, y=df.altitude, fill='tozeroy', fillcolor='rgba(224,224,224,0.5)', mode="lines",line=dict(color='rgb(160,160,160)', width=2), name="altitude", connectgaps=False))
-    fig.add_trace(go.Scatter(x=df.time, y=df.heartrate, mode="lines",line=dict(color='rgb(220,20,60)', width=2), name="heartrate", connectgaps=False,))
+    global fig_timeseries
+    fig_timeseries = make_subplots(specs=[[{"secondary_y": True}]])
+    fig_timeseries.add_trace(go.Scatter(x=df.time, y=df.altitude, fill='tozeroy', fillcolor='rgba(224,224,224,0.5)', mode="lines",line=dict(color='rgb(160,160,160)', width=2), name="altitude", connectgaps=False))
+    fig_timeseries.add_trace(go.Scatter(x=df.time, y=df.heartrate, mode="lines",line=dict(color='rgb(220,20,60)', width=2), name="heartrate", connectgaps=False),secondary_y=True)
     
 
-    fig.update_layout(
+    fig_timeseries.update_layout(
         xaxis=dict(
             showline=False,
             zeroline=True,
             showgrid=False,
             showticklabels=False,
             # linecolor='rgb(204, 204, 204)',
-            gridcolor='rgb(204, 204, 204)',
+            # gridcolor='rgb(204, 204, 204)',
             linewidth=2,
             # ticks='outside'
         ),
@@ -55,15 +58,29 @@ def get_graph_component(df):
             zeroline=True,
             showline=True,
             # linecolor='rgb(204, 204, 204)',
-            gridcolor='rgb(204, 204, 204)',
+            gridcolor='rgb(224,224,224)',
             showticklabels=True,
+            # showticksuffix='last',
+            tickcolor='rgb(224,224,224)',
+            ticksuffix=' m'
+        ),
+        yaxis2=dict(
+            showgrid=False,
+            zeroline=True,
+            showline=True,
+            # linecolor='rgb(204, 204, 204)',
+            gridcolor='rgb(224,224,224)',
+            showticklabels=True,
+            # showticksuffix='last',
+            tickcolor='rgb(224,0,0)',
+            ticksuffix=' bpm'
         ),
         autosize=True,
         margin=dict(
-            l=40,
-            r=10,
+            l=0,
+            r=0,
             t=0,
-            b=10
+            b=0
         ),
         showlegend=True,
         legend=dict(
@@ -76,7 +93,7 @@ def get_graph_component(df):
         plot_bgcolor='white'
     )
 
-    graph_component = dcc.Graph(id="time-series",figure=fig,config={'displayModeBar': False})
+    graph_component = dcc.Graph(id="time-series",figure=fig_timeseries,config={'displayModeBar': False})
 
     return graph_component
 
@@ -140,17 +157,20 @@ def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_c
 
     return main_component
 
-def define_app_callback(app,positions_for_km,settings):
+def define_app_callback(app,positions_for_km,altitude_for_km,time_for_km,settings):
 
     @app.callback(
-        Output("map_container", "children"),
+        [
+            Output("map_container", "children"),
+            Output("time-series", "figure"),
+        ],
         [
             Input("intertemps", "selectedRows"),
         ],
         prevent_initial_call=True,
     )
     def display_intertemps_on_map(selected_rows):
-        global fig_map
+        global fig_map, fig_timeseries
 
         selected_list = [f"{s['km']}" for s in selected_rows]
         print(f"You selected the km: {', '.join(selected_list)}" if selected_rows else "No selections")
@@ -164,9 +184,13 @@ def define_app_callback(app,positions_for_km,settings):
 
         for add in add_list:
             fig_map.children.children.append(dl.Polyline(positions=positions_for_km[int(add)-1],id=add,color='blue'))
+            fig_timeseries.add_trace(go.Scatter(x=time_for_km[int(add)-1], y=altitude_for_km[int(add)-1], fill='tozeroy', fillcolor='rgba(160,160,160,0.6)', mode="lines",line=dict(color='rgb(160,160,160)', width=2), name=add, connectgaps=False))
 
         for remove in remove_list:
             del fig_map.children.children[list(map(lambda x: x.id, fig_map.children.children)).index(remove)]
+            new_data=list(fig_timeseries.data)
+            del new_data[list(map(lambda x: x.name, new_data)).index(remove)]
+            fig_timeseries.data=new_data
         
         if selected_rows:
             min_latitude=360
@@ -197,16 +221,16 @@ def define_app_callback(app,positions_for_km,settings):
             [max_latitude,max_longitude],
         ]
 
-        return fig_map
+        return fig_map, fig_timeseries
 
 
-def init_app(main_component,positions_for_km,settings):
+def init_app(main_component,positions_for_km,altitude_for_km,time_for_km,settings):
     app = Dash(external_stylesheets=[dbc.themes.MINTY])
     server = app.server
 
     app.layout = main_component
     print("App started!")
 
-    define_app_callback(app,positions_for_km,settings)
+    define_app_callback(app,positions_for_km,altitude_for_km,time_for_km,settings)
 
     return server
