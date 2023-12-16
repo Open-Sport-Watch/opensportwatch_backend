@@ -97,7 +97,8 @@ def get_graph_component(df):
             t=0,
             b=0
         ),
-        showlegend=True,
+        hovermode="x unified",
+        showlegend=False,
         legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -150,7 +151,7 @@ def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_c
                                 "rowMultiSelectWithClick": True,
                                 "suppressCellFocus": True,
                             },
-                            style={"height": 400}
+                            style={"height": 400,"textAlign": 'center'}
                             
                         )
                     ],
