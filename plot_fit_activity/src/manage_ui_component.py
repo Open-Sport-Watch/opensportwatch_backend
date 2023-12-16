@@ -46,8 +46,8 @@ def get_map_component(settings,positions):
 def get_graph_component(df):
     global fig_timeseries
     fig_timeseries = make_subplots(specs=[[{"secondary_y": True}]])
-    fig_timeseries.add_trace(go.Scatter(x=df.time, y=df.altitude, fill='tozeroy', fillcolor='rgba(224,224,224,0.5)', mode="lines",line=dict(color='rgb(160,160,160)', width=2), name="altitude", connectgaps=False))
-    fig_timeseries.add_trace(go.Scatter(x=df.time, y=df.pace_smoot, mode="lines",line=dict(color=main_color, width=2), name="pace", connectgaps=False),secondary_y=True)
+    fig_timeseries.add_trace(go.Scattergl(x=df.time, y=df.altitude, fill='tozeroy', fillcolor='rgba(224,224,224,0.5)', mode="lines",line=dict(color='rgb(160,160,160)', width=2), name="altitude", connectgaps=False))
+    fig_timeseries.add_trace(go.Scattergl(x=df.time, y=df.pace_smoot, mode="lines",line=dict(color=main_color, width=2), name="pace", connectgaps=False),secondary_y=True)
     
     y2_scale=list(np.arange(math.floor(df.pace_smoot.min()),math.ceil(df.pace_smoot.max()),(df.pace_smoot.max()-df.pace_smoot.min())/6))
     y2_scale_text=[f"{math.floor(y2)}:{str(round((y2%1)*60)).zfill(2)}/km" for y2 in y2_scale]
@@ -203,7 +203,7 @@ def define_app_callback(app,positions_for_km,altitude_for_km,time_for_km,setting
 
         for add in add_list:
             fig_map.children.children.append(dl.Polyline(positions=positions_for_km[int(add)-1],id=add,color=selected_color))
-            fig_timeseries.add_trace(go.Scatter(x=time_for_km[int(add)-1], y=altitude_for_km[int(add)-1], fill='tozeroy', fillcolor=selected_color_opacity, mode="lines",line=dict(color=selected_color_opacity, width=2), name=add, connectgaps=False,hoverinfo='skip'))
+            fig_timeseries.add_trace(go.Scattergl(x=time_for_km[int(add)-1], y=altitude_for_km[int(add)-1], fill='tozeroy', fillcolor=selected_color_opacity, mode="lines",line=dict(color=selected_color_opacity, width=2), name=add, connectgaps=False,hoverinfo='skip'))
 
         for remove in remove_list:
             del fig_map.children.children[list(map(lambda x: x.id, fig_map.children.children)).index(remove)]
