@@ -35,23 +35,27 @@ def get_map_component(settings,positions):
 
 def get_graph_component(df):
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df.time, y=df.heartrate, mode="lines",line=dict(color='rgb(220,20,60)', width=2), name="heartrate", connectgaps=True,))
-    fig.add_trace(go.Scatter(x=df.time, y=df.power, mode="lines",line=dict(color='rgb(34,139,34)', width=2), name="power", connectgaps=True,))
-    fig.add_trace(go.Scatter(x=df.time, y=df.altitude, mode="lines",line=dict(color='rgb(49,130,189)', width=2), name="altitude", connectgaps=True,))
+    fig.add_trace(go.Scatter(x=df.time, y=df.altitude, fill='tozeroy', fillcolor='rgba(224,224,224,0.5)', mode="lines",line=dict(color='rgb(160,160,160)', width=2), name="altitude", connectgaps=False))
+    fig.add_trace(go.Scatter(x=df.time, y=df.heartrate, mode="lines",line=dict(color='rgb(220,20,60)', width=2), name="heartrate", connectgaps=False,))
+    
 
     fig.update_layout(
         xaxis=dict(
-            showline=True,
+            showline=False,
+            zeroline=True,
             showgrid=False,
-            showticklabels=True,
-            linecolor='rgb(204, 204, 204)',
+            showticklabels=False,
+            # linecolor='rgb(204, 204, 204)',
+            gridcolor='rgb(204, 204, 204)',
             linewidth=2,
-            ticks='outside'
+            # ticks='outside'
         ),
         yaxis=dict(
-            showgrid=False,
-            zeroline=False,
+            showgrid=True,
+            zeroline=True,
             showline=True,
+            # linecolor='rgb(204, 204, 204)',
+            gridcolor='rgb(204, 204, 204)',
             showticklabels=True,
         ),
         autosize=True,
@@ -129,7 +133,7 @@ def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_c
                 
             ),
             dbc.Row([graph_component],
-                style={'height': "25%",'margin-top': 10},
+                style={'height': "410px",'margin-top': 10},
             ),
         ]
     )
@@ -151,10 +155,7 @@ def define_app_callback(app,positions_for_km,settings):
         selected_list = [f"{s['km']}" for s in selected_rows]
         print(f"You selected the km: {', '.join(selected_list)}" if selected_rows else "No selections")
 
-        selected_kms_old_state = list(map(lambda x: x.id, fig_map.children.children))
-        selected_kms_old_state.pop(selected_kms_old_state.index('map-layer'))
-        selected_kms_old_state.pop(selected_kms_old_state.index('screen-control'))
-        selected_kms_old_state.pop(selected_kms_old_state.index('all-gps-track'))
+        selected_kms_old_state = list(map(lambda x: x.id, list(filter(lambda x: x._type=='Polyline' and x.id != 'all-gps-track', fig_map.children.children)) ))
         selected_kms_new_state = selected_list
 
         intersection=list(set(selected_kms_old_state) & set(selected_kms_new_state))
