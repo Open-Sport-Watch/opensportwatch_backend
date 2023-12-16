@@ -2,14 +2,11 @@ import plotly.graph_objs as go
 from dash import dcc, dash_table, html
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-from dash import Output, Input, Dash
+from dash import Output, Input, Dash, State, clientside_callback
 import dash_leaflet as dl
 from plotly.subplots import make_subplots
 import math
 import numpy as np
-
-fig_map = None
-fig_timeseries= None
 
 main_color='rgb(255,61,65)'
 selected_color='rgb(8,102,255)'
@@ -18,7 +15,6 @@ main_text_color='rgb(24, 29, 31)'
 font_family='Montserrat,-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif'
 
 def get_map_component(settings,positions):
-    global fig_map
 
     bounds=[ 
         [settings["min_latitude"],settings["min_longitude"]],
@@ -44,7 +40,6 @@ def get_map_component(settings,positions):
     return fig_map
 
 def get_graph_component(df):
-    global fig_timeseries
     fig_timeseries = make_subplots(specs=[[{"secondary_y": True}]])
     fig_timeseries.add_trace(go.Scattergl(x=df.time, y=df.altitude, fill='tozeroy', fillcolor='rgba(224,224,224,0.5)', mode="lines",line=dict(color='rgb(160,160,160)', width=2), name="altitude", connectgaps=False))
     fig_timeseries.add_trace(go.Scattergl(x=df.time, y=df.pace_smoot, mode="lines",line=dict(color=main_color, width=2), name="pace", connectgaps=False),secondary_y=True)
@@ -119,6 +114,7 @@ def get_graph_component(df):
 def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_component,graph_component):
     main_component = dbc.Row(
         [
+            dcc.Store(id='memory'),
             dbc.Row(
                 [
                     dbc.Col([
@@ -182,19 +178,22 @@ def define_app_callback(app,positions_for_km,altitude_for_km,time_for_km,setting
         [
             Output("map_container", "children"),
             Output("time-series", "figure"),
+            Output("memory", 'data'),
         ],
         [
             Input("intertemps", "selectedRows"),
+            State("map_container", "children"),
+            State("time-series", "figure"),
+            State("memory", 'data')
         ],
         prevent_initial_call=True,
     )
-    def display_intertemps_on_map(selected_rows):
-        global fig_map, fig_timeseries
+    def display_intertemps_on_map(selected_rows,fig_map,fig_timeseries,data):
 
         selected_list = [f"{s['km']}" for s in selected_rows]
         print(f"You selected the km: {', '.join(selected_list)}" if selected_rows else "No selections")
 
-        selected_kms_old_state = list(map(lambda x: x.id, list(filter(lambda x: x._type=='Polyline' and x.id != 'all-gps-track', fig_map.children.children)) ))
+        selected_kms_old_state = list(map(lambda x: x["props"]["id"], list(filter(lambda x: x["type"]=='Polyline' and x["props"]["id"] != 'all-gps-track', fig_map["props"]["children"])) ))
         selected_kms_new_state = selected_list
 
         intersection=list(set(selected_kms_old_state) & set(selected_kms_new_state))
@@ -202,46 +201,60 @@ def define_app_callback(app,positions_for_km,altitude_for_km,time_for_km,setting
         remove_list= list(set(selected_kms_old_state) - set(intersection))
 
         for add in add_list:
-            fig_map.children.children.append(dl.Polyline(positions=positions_for_km[int(add)-1],id=add,color=selected_color))
-            fig_timeseries.add_trace(go.Scattergl(x=time_for_km[int(add)-1], y=altitude_for_km[int(add)-1], fill='tozeroy', fillcolor=selected_color_opacity, mode="lines",line=dict(color=selected_color_opacity, width=2), name=add, connectgaps=False,hoverinfo='skip'))
-
-        for remove in remove_list:
-            del fig_map.children.children[list(map(lambda x: x.id, fig_map.children.children)).index(remove)]
-            new_data=list(fig_timeseries.data)
-            del new_data[list(map(lambda x: x.name, new_data)).index(remove)]
-            fig_timeseries.data=new_data
+            fig_map["props"]["children"].append({
+                "props":{
+                    "children":None,
+                    "id":add,
+                    "color":selected_color,
+                    "positions": positions_for_km[int(add)-1]
+                },
+                "type":"Polyline",
+                "namespace":"dash_leaflet"
+            })
+            fig_timeseries["data"].append({
+                'x':time_for_km[int(add)-1], 
+                'y':altitude_for_km[int(add)-1], 
+                'fill':'tozeroy', 
+                'fillcolor':selected_color_opacity, 
+                'mode':"lines",
+                'line':dict(color=selected_color_opacity, width=2),
+                'name':add,
+                'connectgaps':False,
+                'hoverinfo':'skip'
+            })
         
-        if selected_rows:
-            min_latitude=360
-            min_longitude=360
-            max_latitude=0
-            max_longitude=0
+        for remove in remove_list:
+            del fig_map["props"]["children"][list(map(lambda x: x["props"]["id"], fig_map["props"]["children"])).index(remove)]
+            del fig_timeseries["data"][list(map(lambda x: x["name"], fig_timeseries["data"])).index(remove)]
+            # new_data=list(fig_timeseries.data)
+            # del new_data[list(map(lambda x: x.name, new_data)).index(remove)]
+            # fig_timeseries.data=new_data
+        
+        latitude=[]
+        longitude=[]
+        for child in fig_map["props"]["children"]:
+            if child["type"] == 'Polyline' and child["props"]["id"] != 'all-gps-track':
+                temp = list(map(list, zip(*child["props"]["positions"])))
+                latitude.extend(temp[0])
+                longitude.extend(temp[1])
+        
+        if len(latitude)>0 and len(longitude)>0:
+            min_latitude=min(latitude)
+            min_longitude=min(longitude)
+            max_latitude=max(latitude)
+            max_longitude=max(longitude)
         else:
             min_latitude=settings["min_latitude"]
             min_longitude=settings["min_longitude"]
             max_latitude=settings["max_latitude"]
             max_longitude=settings["max_longitude"]
-        
 
-        latitude=[]
-        longitude=[]
-        for child in fig_map.children.children:
-            if child._type == 'Polyline' and child.id != 'all-gps-track':
-                temp = list(map(list, zip(*child.positions)))
-                latitude.extend(temp[0])
-                longitude.extend(temp[1])
-        
-        min_latitude=min(latitude)
-        min_longitude=min(longitude)
-        max_latitude=max(latitude)
-        max_longitude=max(longitude)
-
-        fig_map.children.bounds=[ 
+        fig_map["props"]["bounds"]=[ 
             [min_latitude,min_longitude],
             [max_latitude,max_longitude],
         ]
         print('callback finish')
-        return fig_map, fig_timeseries
+        return fig_map, fig_timeseries, data
 
 
 def init_app(main_component,positions_for_km,altitude_for_km,time_for_km,settings):
