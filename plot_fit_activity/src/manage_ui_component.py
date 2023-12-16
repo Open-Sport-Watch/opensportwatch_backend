@@ -223,23 +223,24 @@ def define_app_callback(app,positions_for_km,altitude_for_km,time_for_km,setting
             max_longitude=settings["max_longitude"]
         
 
+        latitude=[]
+        longitude=[]
         for child in fig_map.children.children:
             if child._type == 'Polyline' and child.id != 'all-gps-track':
-                for p in child.positions:
-                    if p[0]<min_latitude:
-                        min_latitude=p[0]
-                    if p[0]>max_latitude:
-                        max_latitude=p[0]
-                    if p[1]<min_longitude:
-                        min_longitude=p[1]
-                    if p[1]>max_longitude:
-                        max_longitude=p[1]
+                temp = list(map(list, zip(*child.positions)))
+                latitude.extend(temp[0])
+                longitude.extend(temp[1])
+        
+        min_latitude=min(latitude)
+        min_longitude=min(longitude)
+        max_latitude=max(latitude)
+        max_longitude=max(longitude)
 
         fig_map.children.bounds=[ 
             [min_latitude,min_longitude],
             [max_latitude,max_longitude],
         ]
-
+        print('callback finish')
         return fig_map, fig_timeseries
 
 
