@@ -198,66 +198,72 @@ def get_graph_component(df):
 
 
 def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_component,graph_component):
-    main_component = dbc.Row(
-        [
-            dcc.Store(id='memory'),
-            dbc.Row(
-                [
-                    dbc.Col([
-                        html.Div(
-                            [
-                                html.Img(src=f"assets/{icon}",width=55,height=55,style={"margin-right": 10}),
-                                html.Div(
-                                    [
-                                        html.P(f'{activity["start"].strftime("%d %B %Y @ %H:%M")}',style={'vertical-align': 'bottom',"display": "inline","font-family":font_family,"font-style": "normal",'fontSize': 10}),
-                                        html.H3(f'{activity["name"]}',style={'vertical-align': 'top','color':main_text_color,'font-weight':'bold','margin-bottom':0})
-                                    ]
-                                ),
-                            ],
-                        style={"display": "flex"},
+    main_component = dbc.Container([
+        dbc.Row(
+            [
+                dcc.Store(id='memory'),
+                dbc.Row(
+                    [
+                        dbc.Col([
+                            html.Div(
+                                [
+                                    html.Img(src=f"assets/{icon}",width=55,height=55,style={"margin-right": 10}),
+                                    html.Div(
+                                        [
+                                            html.P(f'{activity["start"].strftime("%d %B %Y @ %H:%M")}',style={'vertical-align': 'bottom',"display": "inline","font-family":font_family,"font-style": "normal",'fontSize': 10}),
+                                            html.H3(f'{activity["name"]}',style={'vertical-align': 'top','color':main_text_color,'font-weight':'bold','margin-bottom':0})
+                                        ]
+                                    ),
+                                ],
+                            style={"display": "flex"},
+                            ),
+                            dash_table.DataTable(
+                                summary,
+                                cell_selectable=False,
+                                style_cell={'text-align': 'center','border': 'none'},
+                                style_header={'fontSize': 20, 'backgroundColor':'rgb(255,255,255)','color':main_text_color,'font-weight':'normal','vertical-align': 'bottom','font-family':font_family},
+                                style_data={'fontSize':10,'vertical-align': 'top','font-family':font_family}
+                            ),
+                            dag.AgGrid(
+                                id="intertemps",
+                                rowData=aggregates,
+                                className="ag-theme-alpine selection compact",
+                                columnDefs=aggregates_columns,
+                                defaultColDef={"resizable": False, "sortable": False, "filter": False},
+                                columnSize="responsiveSizeToFit",
+                                dashGridOptions={
+                                    "rowSelection": "multiple",
+                                    "rowMultiSelectWithClick": True,
+                                    "suppressCellFocus": True,
+                                },
+                                style={"height": 400,"textAlign": 'center'}
+                                
+                            )
+                        ],
+                        style={'margin-top': 10,'margin-left': 10},
+                        # md=12,lg=12,xl=12,xxl='auto'
                         ),
-                        dash_table.DataTable(
-                            summary,
-                            cell_selectable=False,
-                            style_cell={'text-align': 'center','border': 'none'},
-                            style_header={'fontSize': 20, 'backgroundColor':'rgb(255,255,255)','color':main_text_color,'font-weight':'normal','vertical-align': 'bottom','font-family':font_family},
-                            style_data={'fontSize':10,'vertical-align': 'top','font-family':font_family}
+                        dbc.Col(
+                            [map_component],
+                            style={'margin-top': 0,'margin-left': 0},
+                            # md=12,lg=12,xl=12,xxl=8
                         ),
-                        dag.AgGrid(
-                            id="intertemps",
-                            rowData=aggregates,
-                            className="ag-theme-alpine selection compact",
-                            columnDefs=aggregates_columns,
-                            defaultColDef={"resizable": False, "sortable": False, "filter": False},
-                            columnSize="responsiveSizeToFit",
-                            dashGridOptions={
-                                "rowSelection": "multiple",
-                                "rowMultiSelectWithClick": True,
-                                "suppressCellFocus": True,
-                            },
-                            style={"height": 400,"textAlign": 'center'}
-                            
-                        )
                     ],
-                    style={'margin-top': 10,'margin-left': 10},
-                    # md=12,lg=12,xl=12,xxl='auto'
-                    ),
-                    dbc.Col(
-                        [map_component],
-                        style={'margin-top': 0,'margin-left': 0},
-                        # md=12,lg=12,xl=12,xxl=8
-                    ),
-                ],
-                
-            ),
-            dbc.Row([
-                    graph_component,
-                    html.Div(id="layout_output"),
-                ],
-                style={'height': "410px",'margin-top': 10,'margin-left': 10},
-            ),
-        ]
-    )
+                    
+                ),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                graph_component
+                            ],
+                            style={'height': "420px",'margin-top': 10,'margin-left': 10},
+                        ),
+                    ]
+                ),
+            ]
+        )
+    ])
 
     return main_component
 
