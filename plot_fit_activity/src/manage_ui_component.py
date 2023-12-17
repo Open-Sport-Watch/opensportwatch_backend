@@ -41,9 +41,41 @@ def get_map_component(settings,positions):
     return fig_map
 
 def get_graph_component(df):
+    customdata=[f"{math.floor(pace)}:{str(round((pace%1)*60)).zfill(2)}/km" for pace in df.pace_smoot]
     fig_timeseries = make_subplots(specs=[[{"secondary_y": True}]])
-    fig_timeseries.add_trace(go.Scattergl(x=df.time, y=df.altitude, fill='tozeroy', fillcolor='rgba(224,224,224,0.5)', mode="lines",line=dict(color='rgb(160,160,160)', width=2), name="altitude", connectgaps=False))
-    fig_timeseries.add_trace(go.Scattergl(x=df.time, y=df.pace_smoot, mode="lines",line=dict(color=main_color, width=2), name="pace", connectgaps=False),secondary_y=True)
+    fig_timeseries.add_trace(
+        go.Scattergl(
+            x=df.time,
+            y=df.altitude,
+            fill='tozeroy',
+            fillcolor='rgba(224,224,224,0.5)',
+            mode="lines",
+            line=dict(
+                color='rgb(160,160,160)',
+                width=2
+            ),
+            name="altitude",
+            customdata=customdata,
+            hovertemplate="%{y} %{_xother}",
+            connectgaps=False
+        )
+    )
+    fig_timeseries.add_trace(
+        go.Scattergl(
+            x=df.time,
+            y=df.pace_smoot,
+            mode="lines",
+            line=dict(
+                color=main_color,
+                width=2
+            ),
+            name="pace",
+            customdata=customdata,
+            hovertemplate="%{_xother} %{customdata}",
+            connectgaps=False
+        ),
+        secondary_y=True
+    )
     
     y2_scale=list(np.arange(math.floor(df.pace_smoot.min()),math.ceil(df.pace_smoot.max()),(df.pace_smoot.max()-df.pace_smoot.min())/6))
     y2_scale_text=[f"{math.floor(y2)}:{str(round((y2%1)*60)).zfill(2)}/km" for y2 in y2_scale]
@@ -75,6 +107,8 @@ def get_graph_component(df):
         ),
         yaxis2=dict(
             fixedrange= True,
+            showspikes=True,
+            spikecolor=main_color,
             showgrid=False,
             zeroline=True,
             showline=True,
