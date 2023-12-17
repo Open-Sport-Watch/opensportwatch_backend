@@ -14,7 +14,7 @@ map_component = get_map_component(settings,positions)
 graph_component = get_graph_component(df)
 main_component = get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_component,graph_component)
 
-server = init_app(main_component,positions_for_km, altitude_for_km, time_for_km, settings)
+server = init_app(main_component, df, positions_for_km, altitude_for_km, time_for_km, settings)
  
 
 if __name__ == "__main__":

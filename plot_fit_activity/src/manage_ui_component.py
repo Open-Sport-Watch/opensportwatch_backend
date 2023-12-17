@@ -2,11 +2,13 @@ import plotly.graph_objs as go
 from dash import dcc, dash_table, html
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-from dash import Output, Input, Dash, State, clientside_callback
+from dash import Output, Input, Dash, State, exceptions
 import dash_leaflet as dl
 from plotly.subplots import make_subplots
 import math
 import numpy as np
+import json
+from src.manage_fit import retrieve_positions_from_dataframe
 
 main_color='rgb(255,61,65)'
 selected_color='rgb(8,102,255)'
@@ -40,11 +42,38 @@ def get_map_component(settings,positions):
     )
     return fig_map
 
+def add_to_map(map,id,positions):
+    map.append({
+        "props":{
+            "children":None,
+            "id":id,
+            "color":selected_color,
+            "positions": positions
+        },
+        "type":"Polyline",
+        "namespace":"dash_leaflet"
+    })
+    return map
+
+def add_to_graph(graph,id,x,y):
+    graph["data"].append({
+        'x':x, 
+        'y':y, 
+        'fill':'tozeroy', 
+        'fillcolor':selected_color_opacity, 
+        'mode':"lines",
+        'line':dict(color=selected_color_opacity, width=2),
+        'name':id,
+        'connectgaps':False,
+        'hoverinfo':'skip'
+    })
+    return graph
+
 def get_graph_component(df):
     customdata=[f"{math.floor(pace)}:{str(round((pace%1)*60)).zfill(2)}/km" for pace in df.pace_smoot]
     fig_timeseries = make_subplots(specs=[[{"secondary_y": True}]])
     fig_timeseries.add_trace(
-        go.Scattergl(
+        go.Scatter(
             x=df.time,
             y=df.altitude,
             fill='tozeroy',
@@ -61,7 +90,7 @@ def get_graph_component(df):
         )
     )
     fig_timeseries.add_trace(
-        go.Scattergl(
+        go.Scatter(
             x=df.time,
             y=df.pace_smoot,
             mode="lines",
@@ -199,7 +228,10 @@ def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_c
                 ],
                 
             ),
-            dbc.Row([graph_component],
+            dbc.Row([
+                    graph_component,
+                    html.Div(id="layout_output"),
+                ],
                 style={'height': "410px",'margin-top': 10,'margin-left': 10},
             ),
         ]
@@ -207,11 +239,11 @@ def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_c
 
     return main_component
 
-def define_app_callback(app,positions_for_km,altitude_for_km,time_for_km,settings):
+def define_app_callback(app,df,positions_for_km,altitude_for_km,time_for_km,settings):
 
     @app.callback(
         [
-            Output("map", "children"),
+            Output("map", "children", allow_duplicate=True),
             Output('map', 'viewport'),
             Output("time-series", "figure"),
             Output("memory", 'data'),
@@ -237,27 +269,9 @@ def define_app_callback(app,positions_for_km,altitude_for_km,time_for_km,setting
         remove_list= list(set(selected_kms_old_state) - set(intersection))
 
         for add in add_list:
-            fig_map.append({
-                "props":{
-                    "children":None,
-                    "id":add,
-                    "color":selected_color,
-                    "positions": positions_for_km[int(add)-1]
-                },
-                "type":"Polyline",
-                "namespace":"dash_leaflet"
-            })
-            fig_timeseries["data"].append({
-                'x':time_for_km[int(add)-1], 
-                'y':altitude_for_km[int(add)-1], 
-                'fill':'tozeroy', 
-                'fillcolor':selected_color_opacity, 
-                'mode':"lines",
-                'line':dict(color=selected_color_opacity, width=2),
-                'name':add,
-                'connectgaps':False,
-                'hoverinfo':'skip'
-            })
+            fig_map=add_to_map(fig_map,add,positions_for_km[int(add)-1])
+            fig_timeseries=add_to_graph(fig_timeseries,add,time_for_km[int(add)-1],altitude_for_km[int(add)-1])
+
         
         for remove in remove_list:
             del fig_map[list(map(lambda x: x["props"]["id"], fig_map)).index(remove)]
@@ -282,21 +296,41 @@ def define_app_callback(app,positions_for_km,altitude_for_km,time_for_km,setting
             max_latitude=settings["max_latitude"]
             max_longitude=settings["max_longitude"]
 
-        # non funziona
-
         fig_map_viewport=dict(bounds=[[min_latitude,min_longitude],[max_latitude,max_longitude]])
 
         print('callback finish')
         return fig_map, fig_map_viewport, fig_timeseries, data
 
+    @app.callback(
+        Output("map", "children"),
+        [
+            Input("time-series", "relayoutData"),
+            State("map", "children"),
+        ],
+        prevent_initial_call=True,
+    )
+    def display_selected_on_map(relayout_data,fig_map):
+        if "xaxis.range[0]" in relayout_data:
+            start_date=relayout_data["xaxis.range[0]"]
+            end_date=relayout_data["xaxis.range[1]"]
 
-def init_app(main_component,positions_for_km,altitude_for_km,time_for_km,settings):
+            df_filt = df[df['time'].dt.strftime('%Y-%m-%d %H:%M:%S.%f').between(start_date, end_date)]
+            #df.loc[(df['time'] >= start_date) & (df['time'] <= end_date)]
+            positions=retrieve_positions_from_dataframe(df_filt.latitude.to_list(),df_filt.longitude.to_list())
+            fig_map=add_to_map(fig_map,'manual-range',positions)
+            return fig_map
+        elif "xaxis.autorange" in relayout_data and relayout_data['xaxis.autorange']==True and 'manual-range' in list(map(lambda x: x["props"]["id"], fig_map)):
+            del fig_map[list(map(lambda x: x["props"]["id"], fig_map)).index('manual-range')]
+            return fig_map
+        raise exceptions.PreventUpdate
+
+def init_app(main_component,df,positions_for_km,altitude_for_km,time_for_km,settings):
     app = Dash(external_stylesheets=[dbc.themes.MINTY])
     server = app.server
 
     app.layout = main_component
     print("App started!")
 
-    define_app_callback(app,positions_for_km,altitude_for_km,time_for_km,settings)
+    define_app_callback(app,df,positions_for_km,altitude_for_km,time_for_km,settings)
 
     return server

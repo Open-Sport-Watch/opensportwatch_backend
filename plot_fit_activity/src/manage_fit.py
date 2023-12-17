@@ -7,6 +7,15 @@ import time
 import pickle
 import os
 
+
+def retrieve_positions_from_dataframe(latitude,longitude):
+    positions=[]
+    for x,y in enumerate(latitude):
+        if not math.isnan(latitude[x]) and not math.isnan(longitude[x]) and  \
+            not latitude[x] is None and not longitude[x] is None:
+            positions.append([latitude[x],longitude[x]])
+    return positions
+
 def extract_data_from_fit(file_name):
 
     if os.path.isfile(f"{file_name}.pickle"):
@@ -138,11 +147,7 @@ def extract_data_from_fit(file_name):
             }
         )
 
-        positions=[]
-        for x,y in enumerate(df.latitude):
-            if not math.isnan(df.latitude[x]) and not math.isnan(df.longitude[x]) and  \
-                not df.latitude[x] is None and not df.longitude[x] is None:
-                positions.append([df.latitude[x],df.longitude[x]])
+        positions=retrieve_positions_from_dataframe(df.latitude.to_list(),df.longitude.to_list())
 
         last_kilometer = 0
         positions_for_km=[] #* math.floor(distance[-1]/1000)
