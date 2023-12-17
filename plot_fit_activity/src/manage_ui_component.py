@@ -177,21 +177,20 @@ def define_app_callback(app,positions_for_km,altitude_for_km,time_for_km,setting
 
     @app.callback(
         [
-            Output("map", "bounds"),
             Output("map", "children"),
+            Output('map', 'viewport'),
             Output("time-series", "figure"),
             Output("memory", 'data'),
         ],
         [
             Input("intertemps", "selectedRows"),
             State("map", "children"),
-            State("map", "bounds"),
             State("time-series", "figure"),
             State("memory", 'data')
         ],
         prevent_initial_call=True,
     )
-    def display_intertemps_on_map(selected_rows,fig_map,fig_map_bounds,fig_timeseries,data):
+    def display_intertemps_on_map(selected_rows,fig_map,fig_timeseries,data):
 
         selected_list = [f"{s['km']}" for s in selected_rows]
         print(f"You selected the km: {', '.join(selected_list)}" if selected_rows else "No selections")
@@ -250,11 +249,11 @@ def define_app_callback(app,positions_for_km,altitude_for_km,time_for_km,setting
             max_longitude=settings["max_longitude"]
 
         # non funziona
-        print(fig_map_bounds)
-        fig_map_bounds=[[min_latitude,min_longitude],[max_latitude,max_longitude]]
-        print(fig_map_bounds)
+
+        fig_map_viewport=dict(bounds=[[min_latitude,min_longitude],[max_latitude,max_longitude]])
+
         print('callback finish')
-        return fig_map_bounds, fig_map, fig_timeseries, data
+        return fig_map, fig_map_viewport, fig_timeseries, data
 
 
 def init_app(main_component,positions_for_km,altitude_for_km,time_for_km,settings):
