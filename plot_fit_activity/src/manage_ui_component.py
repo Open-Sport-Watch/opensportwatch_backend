@@ -24,6 +24,7 @@ def get_map_component(settings,positions):
     children = [
         dl.TileLayer(id='map-layer'),
         dl.FullScreenControl(id='screen-control'),
+        dl.GestureHandling(id='gesture-control'),
         dl.Polyline(positions=positions,color=main_color,id='all-gps-track')
     ]
     
@@ -176,24 +177,26 @@ def define_app_callback(app,positions_for_km,altitude_for_km,time_for_km,setting
 
     @app.callback(
         [
-            Output("map_container", "children"),
+            Output("map", "bounds"),
+            Output("map", "children"),
             Output("time-series", "figure"),
             Output("memory", 'data'),
         ],
         [
             Input("intertemps", "selectedRows"),
-            State("map_container", "children"),
+            State("map", "children"),
+            State("map", "bounds"),
             State("time-series", "figure"),
             State("memory", 'data')
         ],
         prevent_initial_call=True,
     )
-    def display_intertemps_on_map(selected_rows,fig_map,fig_timeseries,data):
+    def display_intertemps_on_map(selected_rows,fig_map,fig_map_bounds,fig_timeseries,data):
 
         selected_list = [f"{s['km']}" for s in selected_rows]
         print(f"You selected the km: {', '.join(selected_list)}" if selected_rows else "No selections")
 
-        selected_kms_old_state = list(map(lambda x: x["props"]["id"], list(filter(lambda x: x["type"]=='Polyline' and x["props"]["id"] != 'all-gps-track', fig_map["props"]["children"])) ))
+        selected_kms_old_state = list(map(lambda x: x["props"]["id"], list(filter(lambda x: x["type"]=='Polyline' and x["props"]["id"] != 'all-gps-track', fig_map)) ))
         selected_kms_new_state = selected_list
 
         intersection=list(set(selected_kms_old_state) & set(selected_kms_new_state))
@@ -201,7 +204,7 @@ def define_app_callback(app,positions_for_km,altitude_for_km,time_for_km,setting
         remove_list= list(set(selected_kms_old_state) - set(intersection))
 
         for add in add_list:
-            fig_map["props"]["children"].append({
+            fig_map.append({
                 "props":{
                     "children":None,
                     "id":add,
@@ -224,15 +227,12 @@ def define_app_callback(app,positions_for_km,altitude_for_km,time_for_km,setting
             })
         
         for remove in remove_list:
-            del fig_map["props"]["children"][list(map(lambda x: x["props"]["id"], fig_map["props"]["children"])).index(remove)]
+            del fig_map[list(map(lambda x: x["props"]["id"], fig_map)).index(remove)]
             del fig_timeseries["data"][list(map(lambda x: x["name"], fig_timeseries["data"])).index(remove)]
-            # new_data=list(fig_timeseries.data)
-            # del new_data[list(map(lambda x: x.name, new_data)).index(remove)]
-            # fig_timeseries.data=new_data
         
         latitude=[]
         longitude=[]
-        for child in fig_map["props"]["children"]:
+        for child in fig_map:
             if child["type"] == 'Polyline' and child["props"]["id"] != 'all-gps-track':
                 temp = list(map(list, zip(*child["props"]["positions"])))
                 latitude.extend(temp[0])
@@ -249,12 +249,12 @@ def define_app_callback(app,positions_for_km,altitude_for_km,time_for_km,setting
             max_latitude=settings["max_latitude"]
             max_longitude=settings["max_longitude"]
 
-        fig_map["props"]["bounds"]=[ 
-            [min_latitude,min_longitude],
-            [max_latitude,max_longitude],
-        ]
+        # non funziona
+        print(fig_map_bounds)
+        fig_map_bounds=[[min_latitude,min_longitude],[max_latitude,max_longitude]]
+        print(fig_map_bounds)
         print('callback finish')
-        return fig_map, fig_timeseries, data
+        return fig_map_bounds, fig_map, fig_timeseries, data
 
 
 def init_app(main_component,positions_for_km,altitude_for_km,time_for_km,settings):
