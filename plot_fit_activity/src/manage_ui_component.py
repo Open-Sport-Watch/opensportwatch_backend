@@ -16,6 +16,29 @@ selected_color_opacity='rgba(8,102,255,0.4)'
 main_text_color='rgb(24, 29, 31)'
 font_family='Montserrat,-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif'
 
+
+def retrieve_map_bounds(fig_map,settings):
+    latitude=[]
+    longitude=[]
+    for child in fig_map:
+        if child["type"] == 'Polyline' and child["props"]["id"] != 'all-gps-track':
+            temp = list(map(list, zip(*child["props"]["positions"])))
+            latitude.extend(temp[0])
+            longitude.extend(temp[1])
+    
+    if len(latitude)>0 and len(longitude)>0:
+        min_latitude=min(latitude)
+        min_longitude=min(longitude)
+        max_latitude=max(latitude)
+        max_longitude=max(longitude)
+    else:
+        min_latitude=settings["min_latitude"]
+        min_longitude=settings["min_longitude"]
+        max_latitude=settings["max_latitude"]
+        max_longitude=settings["max_longitude"]
+
+    return min_latitude,min_longitude,max_latitude,max_longitude
+
 def get_map_component(settings,positions):
 
     bounds=[ 
@@ -244,7 +267,7 @@ def define_app_callback(app,df,positions_for_km,altitude_for_km,time_for_km,sett
     @app.callback(
         [
             Output("map", "children", allow_duplicate=True),
-            Output('map', 'viewport'),
+            Output('map', 'viewport', allow_duplicate=True),
             Output("time-series", "figure"),
             Output("memory", 'data'),
         ],
@@ -277,24 +300,7 @@ def define_app_callback(app,df,positions_for_km,altitude_for_km,time_for_km,sett
             del fig_map[list(map(lambda x: x["props"]["id"], fig_map)).index(remove)]
             del fig_timeseries["data"][list(map(lambda x: x["name"], fig_timeseries["data"])).index(remove)]
         
-        latitude=[]
-        longitude=[]
-        for child in fig_map:
-            if child["type"] == 'Polyline' and child["props"]["id"] != 'all-gps-track':
-                temp = list(map(list, zip(*child["props"]["positions"])))
-                latitude.extend(temp[0])
-                longitude.extend(temp[1])
-        
-        if len(latitude)>0 and len(longitude)>0:
-            min_latitude=min(latitude)
-            min_longitude=min(longitude)
-            max_latitude=max(latitude)
-            max_longitude=max(longitude)
-        else:
-            min_latitude=settings["min_latitude"]
-            min_longitude=settings["min_longitude"]
-            max_latitude=settings["max_latitude"]
-            max_longitude=settings["max_longitude"]
+        min_latitude,min_longitude,max_latitude,max_longitude=retrieve_map_bounds(fig_map,settings)
 
         fig_map_viewport=dict(bounds=[[min_latitude,min_longitude],[max_latitude,max_longitude]])
 
@@ -302,7 +308,10 @@ def define_app_callback(app,df,positions_for_km,altitude_for_km,time_for_km,sett
         return fig_map, fig_map_viewport, fig_timeseries, data
 
     @app.callback(
-        Output("map", "children"),
+        [
+            Output("map", "children"),
+            Output('map', 'viewport'),
+        ],
         [
             Input("time-series", "relayoutData"),
             State("map", "children"),
@@ -315,13 +324,16 @@ def define_app_callback(app,df,positions_for_km,altitude_for_km,time_for_km,sett
             end_date=relayout_data["xaxis.range[1]"]
 
             df_filt = df[df['time'].dt.strftime('%Y-%m-%d %H:%M:%S.%f').between(start_date, end_date)]
-            #df.loc[(df['time'] >= start_date) & (df['time'] <= end_date)]
             positions=retrieve_positions_from_dataframe(df_filt.latitude.to_list(),df_filt.longitude.to_list())
             fig_map=add_to_map(fig_map,'manual-range',positions)
-            return fig_map
+            min_latitude,min_longitude,max_latitude,max_longitude=retrieve_map_bounds(fig_map,settings)
+            fig_map_viewport=dict(bounds=[[min_latitude,min_longitude],[max_latitude,max_longitude]])
+            return fig_map,fig_map_viewport
         elif "xaxis.autorange" in relayout_data and relayout_data['xaxis.autorange']==True and 'manual-range' in list(map(lambda x: x["props"]["id"], fig_map)):
             del fig_map[list(map(lambda x: x["props"]["id"], fig_map)).index('manual-range')]
-            return fig_map
+            min_latitude,min_longitude,max_latitude,max_longitude=retrieve_map_bounds(fig_map,settings)
+            fig_map_viewport=dict(bounds=[[min_latitude,min_longitude],[max_latitude,max_longitude]])
+            return fig_map,fig_map_viewport
         raise exceptions.PreventUpdate
 
 def init_app(main_component,df,positions_for_km,altitude_for_km,time_for_km,settings):
