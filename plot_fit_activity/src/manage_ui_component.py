@@ -7,7 +7,6 @@ import dash_leaflet as dl
 from plotly.subplots import make_subplots
 import math
 import numpy as np
-import json
 from src.manage_fit import retrieve_positions_from_dataframe
 
 main_color='rgb(255,61,65)'
@@ -304,7 +303,6 @@ def define_app_callback(app,df,positions_for_km,altitude_for_km,time_for_km,sett
 
         fig_map_viewport=dict(bounds=[[min_latitude,min_longitude],[max_latitude,max_longitude]])
 
-        print('callback finish')
         return fig_map, fig_map_viewport, fig_timeseries, data
 
     @app.callback(
