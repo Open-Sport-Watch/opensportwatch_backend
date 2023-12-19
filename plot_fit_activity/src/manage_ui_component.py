@@ -124,7 +124,7 @@ def add_to_graph(graph,id,x,y):
     })
     return graph
 
-def get_graph_component(df):
+def get_pace_component(df):
     customdata=[f"{math.floor(pace)}:{str(round((pace%1)*60)).zfill(2)}/km" for pace in df.pace_smoot]
     fig_timeseries = make_subplots(specs=[[{"secondary_y": True}]])
     fig_timeseries.add_trace(
@@ -225,12 +225,12 @@ def get_graph_component(df):
         plot_bgcolor='white'
     )
 
-    graph_component = dcc.Graph(id="time-series",figure=fig_timeseries,config={'displayModeBar': False},clear_on_unhover=True)
+    pace_component = dcc.Graph(id="time-series",figure=fig_timeseries,config={'displayModeBar': False},clear_on_unhover=True)
 
-    return graph_component
+    return pace_component
 
 
-def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_component,graph_component):
+def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_component,pace_component):
     main_component = dbc.Container([
         dbc.Row(
             [
@@ -286,13 +286,9 @@ def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_c
                 ),
                 dbc.Row(
                     [
-                        dbc.Col(
-                            [
-                                graph_component
-                            ],
-                            style={'height': "420px",'margin-top': 10,'margin-left': 10},
-                        ),
-                    ]
+                        pace_component
+                    ],
+                    style={'height': "420px",'margin-top': 10,'margin-left': 10},
                 ),
             ]
         )
