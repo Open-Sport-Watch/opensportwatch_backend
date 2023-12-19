@@ -15,6 +15,39 @@ selected_color_opacity='rgba(8,102,255,0.4)'
 main_text_color='rgb(24, 29, 31)'
 font_family='Montserrat,-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif'
 
+custom_icon = dict(
+    iconUrl='assets/blue_dot.png',
+    iconSize=[15, 15],
+)
+
+def find_indices(list_to_check, item_to_find):
+    indices = []
+    for idx, value in enumerate(list_to_check):
+        if value == item_to_find:
+            indices.append(idx)
+    return indices
+
+def reset_marker(fig_map):
+    if 'Marker' in list(map(lambda x: x["type"], fig_map)):
+        del fig_map[list(map(lambda x: x["type"], fig_map)).index('Marker')]
+    return fig_map
+
+def update_marker_position(fig_map,lat,lon):
+    if len(list(filter(lambda x: x["type"]=='Marker', fig_map)))==0:
+        fig_map.append({
+            "props":{
+                "children":None,
+                "position": [lat,lon],
+                "icon":custom_icon,
+                "id": "marker-position"
+            },
+            "type":"Marker",
+            "namespace":"dash_leaflet"
+        })
+    else:
+        fig_map[list(map(lambda x: x["type"], fig_map)).index('Marker')]["props"]["position"]=[lat,lon]
+        
+    return fig_map
 
 def retrieve_map_bounds(fig_map,settings):
     latitude=[]
@@ -192,7 +225,7 @@ def get_graph_component(df):
         plot_bgcolor='white'
     )
 
-    graph_component = dcc.Graph(id="time-series",figure=fig_timeseries,config={'displayModeBar': False})
+    graph_component = dcc.Graph(id="time-series",figure=fig_timeseries,config={'displayModeBar': False},clear_on_unhover=True)
 
     return graph_component
 
@@ -313,7 +346,7 @@ def define_app_callback(app,df,positions_for_km,altitude_for_km,time_for_km,sett
 
     @app.callback(
         [
-            Output("map", "children"),
+            Output("map", "children", allow_duplicate=True),
             Output('map', 'viewport'),
         ],
         [
@@ -324,6 +357,8 @@ def define_app_callback(app,df,positions_for_km,altitude_for_km,time_for_km,sett
     )
     def display_selected_on_map(relayout_data,fig_map):
         if "xaxis.range[0]" in relayout_data:
+            if 'manual-range' in list(map(lambda x: x["props"]["id"], fig_map)):
+                del fig_map[list(map(lambda x: x["props"]["id"], fig_map)).index('manual-range')]
             start_date=relayout_data["xaxis.range[0]"]
             end_date=relayout_data["xaxis.range[1]"]
 
@@ -339,6 +374,22 @@ def define_app_callback(app,df,positions_for_km,altitude_for_km,time_for_km,sett
             fig_map_viewport=dict(bounds=[[min_latitude,min_longitude],[max_latitude,max_longitude]])
             return fig_map,fig_map_viewport
         raise exceptions.PreventUpdate
+
+    @app.callback(
+        Output("map", "children"),
+        [
+            Input("time-series", "hoverData"),
+            State("map", "children"),
+        ],
+        prevent_initial_call=True,
+    )
+    def display_position_on_map(hoverData,fig_map):
+        if hoverData is None:
+            return reset_marker(fig_map)
+
+        lat = df.latitude[hoverData["points"][0]["pointIndex"]]
+        lon = df.longitude[hoverData["points"][0]["pointIndex"]]
+        return update_marker_position(fig_map,lat,lon)
 
 def init_app(main_component,df,positions_for_km,altitude_for_km,time_for_km,settings):
     app = Dash(external_stylesheets=[dbc.themes.MINTY])
