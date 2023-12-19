@@ -1,6 +1,6 @@
 from waitress import serve
 from src.manage_fit import extract_data_from_fit
-from src.manage_ui_component import get_map_component, get_pace_component, get_main_component, init_app
+from src.manage_ui_component import get_map_component, get_pace_component, get_heart_component, get_main_component, init_app
 
 # file_name = "plot_fit_activity/resources/Morning_Run_Suunto.fit"
 # file_name = "plot_fit_activity/resources/Morning_Run_Garmin.fit"
@@ -12,7 +12,8 @@ df, positions, positions_for_km, altitude_for_km, time_for_km, activity, summary
 
 map_component = get_map_component(settings,positions)
 pace_component = get_pace_component(df)
-main_component = get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_component,pace_component)
+heart_component = get_heart_component(df)
+main_component = get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_component,pace_component,heart_component)
 
 server = init_app(main_component, df, positions_for_km, altitude_for_km, time_for_km, settings)
  
