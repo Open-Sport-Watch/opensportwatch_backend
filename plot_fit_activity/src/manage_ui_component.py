@@ -124,7 +124,7 @@ def add_to_graph(graph,id,x,y):
     })
     return graph
 
-def get_pace_component(df):
+def get_graph_component(df):
     customdata=[f"{math.floor(pace)}:{str(round((pace%1)*60)).zfill(2)}/km" for pace in df.pace_smoot]
     fig_timeseries = make_subplots(specs=[[{"secondary_y": True}]])
     fig_timeseries.add_trace(
@@ -225,106 +225,24 @@ def get_pace_component(df):
         plot_bgcolor='white'
     )
 
-    pace_component = dcc.Graph(id="time-series-pace",figure=fig_timeseries,config={'displayModeBar': False},clear_on_unhover=True)
+    graph_component = dcc.Graph(id="time-series",figure=fig_timeseries,config={'displayModeBar': False},clear_on_unhover=True)
 
-    return pace_component
+    return graph_component
 
-def get_heart_component(df):
-    fig_timeseries = make_subplots(specs=[[{"secondary_y": True}]])
-    fig_timeseries.add_trace(
-        go.Scatter(
-            x=df.time,
-            y=df.altitude,
-            fill='tozeroy',
-            fillcolor='rgba(224,224,224,0.5)',
-            mode="lines",
-            line=dict(
-                color='rgb(160,160,160)',
-                width=2
-            ),
-            name="altitude",
-            hovertemplate="%{y} %{_xother}",
-            connectgaps=False
-        )
+def get_graph_selector():
+    checklist_item = dcc.Checklist(
+        options=[
+            {'label': html.Div('pace', style={"display": "inline", "padding-left":"0.5rem"}), 'value': 'pace'},
+            {'label': html.Div('heartrate', style={"display": "inline", "padding-left":"0.5rem"}), 'value': 'heartrate'},
+            {'label': html.Div('power', style={"display": "inline", "padding-left":"0.5rem"}), 'value': 'power'},
+        ],
+        value=['pace'],
+        labelStyle= {"margin":"1rem"},
+        style = {'display': 'flex','justify-content':'center',"font-family":font_family}
     )
-    fig_timeseries.add_trace(
-        go.Scatter(
-            x=df.time,
-            y=df.heartrate,
-            mode="lines",
-            line=dict(
-                color=main_color,
-                width=2
-            ),
-            name="heartrate",
-            hovertemplate="%{_xother} %{customdata}",
-            connectgaps=False
-        ),
-        secondary_y=True
-    )
-    
-    fig_timeseries.update_layout(
-        font_family=font_family,
-        xaxis=dict(
-            showline=False,
-            zeroline=True,
-            showgrid=False,
-            showticklabels=False,
-            # linecolor='rgb(204, 204, 204)',
-            # gridcolor='rgb(204, 204, 204)',
-            linewidth=2,
-            # ticks='outside'
-        ),
-        yaxis=dict(
-            fixedrange= True,
-            showgrid=True,
-            zeroline=True,
-            showline=True,
-            # linecolor='rgb(204, 204, 204)',
-            gridcolor='rgb(224,224,224)',
-            showticklabels=True,
-            # showticksuffix='last',
-            tickcolor='rgb(224,224,224)',
-            ticksuffix=' m'
-        ),
-        yaxis2=dict(
-            fixedrange= True,
-            showspikes=True,
-            spikecolor=main_color,
-            showgrid=False,
-            zeroline=True,
-            showline=True,
-            # linecolor='rgb(204, 204, 204)',
-            gridcolor='rgb(224,224,224)',
-            showticklabels=True,
-            # showticksuffix='last',
-            tickcolor='rgb(224,0,0)',
-            ticksuffix=' bpm',
-        ),
-        autosize=True,
-        margin=dict(
-            l=0,
-            r=0,
-            t=0,
-            b=0
-        ),
-        hovermode="x unified",
-        showlegend=False,
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1
-        ),
-        plot_bgcolor='white'
-    )
+    return checklist_item
 
-    pace_component = dcc.Graph(id="time-series-heartrate",figure=fig_timeseries,config={'displayModeBar': False},clear_on_unhover=True)
-
-    return pace_component
-
-def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_component,pace_component,heart_component):
+def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_component,graph_component,radio_item):
     main_component = dbc.Container([
         dbc.Row(
             [
@@ -380,16 +298,11 @@ def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_c
                 ),
                 dbc.Row(
                     [
-                        pace_component,
+                        graph_component,
+                        radio_item
                     ],
-                    style={'height': "150px",'margin-top': 10,'margin-left': 10},
-                ),
-                dbc.Row(
-                    [
-                        heart_component
-                    ],
-                    style={'height': "150px",'margin-top': 10,'margin-left': 10},
-                ),
+                    style={'height': "300px",'margin-top': 10,'margin-left': 10},
+                )
             ]
         )
     ])
@@ -402,13 +315,13 @@ def define_app_callback(app,df,positions_for_km,altitude_for_km,time_for_km,sett
         [
             Output("map", "children", allow_duplicate=True),
             Output('map', 'viewport', allow_duplicate=True),
-            Output("time-series-pace", "figure"),
+            Output("time-series", "figure"),
             Output("memory", 'data'),
         ],
         [
             Input("intertemps", "selectedRows"),
             State("map", "children"),
-            State("time-series-pace", "figure"),
+            State("time-series", "figure"),
             State("memory", 'data')
         ],
         prevent_initial_call=True,
@@ -446,7 +359,7 @@ def define_app_callback(app,df,positions_for_km,altitude_for_km,time_for_km,sett
             Output('map', 'viewport'),
         ],
         [
-            Input("time-series-pace", "relayoutData"),
+            Input("time-series", "relayoutData"),
             State("map", "children"),
         ],
         prevent_initial_call=True,
@@ -474,7 +387,7 @@ def define_app_callback(app,df,positions_for_km,altitude_for_km,time_for_km,sett
     @app.callback(
         Output("map", "children"),
         [
-            Input("time-series-pace", "hoverData"),
+            Input("time-series", "hoverData"),
             State("map", "children"),
         ],
         prevent_initial_call=True,
