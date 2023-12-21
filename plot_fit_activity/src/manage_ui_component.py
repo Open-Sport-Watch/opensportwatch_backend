@@ -308,9 +308,9 @@ def get_graph_selector():
     checklist_item = dcc.Checklist(
         id="checklist",
         options=[
-            {'label': html.Div('pace', style={"display": "inline", "padding-left":"0.5rem"}), 'value': 'pace'},
-            {'label': html.Div('heartrate', style={"display": "inline", "padding-left":"0.5rem"}), 'value': 'heartrate'},
-            {'label': html.Div('power', style={"display": "inline", "padding-left":"0.5rem"}), 'value': 'power'},
+            {'label': html.Div('pace', style={"display": "inline", "padding-left":"0.5rem",'color': 'blue', 'font-size': 20}), 'value': 'pace'},
+            {'label': html.Div('heartrate', style={"display": "inline", "padding-left":"0.5rem",'color': 'red', 'font-size': 20}), 'value': 'heartrate'},
+            {'label': html.Div('power', style={"display": "inline", "padding-left":"0.5rem",'color': 'violet', 'font-size': 20}), 'value': 'power'},
         ],
         value=['pace'],
         labelStyle= {"margin":"1rem"},
