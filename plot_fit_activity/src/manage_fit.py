@@ -127,10 +127,14 @@ def extract_data_from_fit(file_name):
 
         df1 = pd.DataFrame(
             {
-                "pace": pace
+                "pace": pace,
+                "hr": hr,
+                "power": power
             }
         )
         pace_smoot = df1.pace.rolling(window=90, min_periods=10, center=True).median()
+        hr_smoot = df1.hr.rolling(window=90, min_periods=10, center=True).median()
+        power_smoot = df1.power.rolling(window=90, min_periods=10, center=True).median()
 
         df = pd.DataFrame(
             {
@@ -138,8 +142,8 @@ def extract_data_from_fit(file_name):
                 "latitude": latitude,
                 "longitude": longitude,
                 "altitude": altitude,
-                "heartrate": hr,
-                "power": power,
+                "heartrate": hr_smoot,
+                "power": power_smoot,
                 "distance": distance,
                 "speed": speed,
                 "pace": pace,
