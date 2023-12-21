@@ -126,7 +126,7 @@ def add_to_graph(graph,id,x,y):
 
 def get_graph_component(df):
     customdata=[f"{math.floor(pace)}:{str(round((pace%1)*60)).zfill(2)}/km" for pace in df.pace_smoot]
-    fig_timeseries = make_subplots(specs=[[{"secondary_y": True}]])
+    fig_timeseries = go.Figure()
     fig_timeseries.add_trace(
         go.Scatter(
             x=df.time,
@@ -140,7 +140,7 @@ def get_graph_component(df):
             ),
             name="altitude",
             customdata=customdata,
-            hovertemplate="%{y} %{_xother}",
+            hovertemplate="%{y} %{_xother} %{_xother} %{_xother}",
             connectgaps=False
         )
     )
@@ -150,15 +150,45 @@ def get_graph_component(df):
             y=df.pace_smoot,
             mode="lines",
             line=dict(
-                color=main_color,
-                width=2
+                color='blue',
+                width=1
             ),
             name="pace",
             customdata=customdata,
-            hovertemplate="%{_xother} %{customdata}",
-            connectgaps=False
-        ),
-        secondary_y=True
+            hovertemplate="%{_xother} %{customdata} %{_xother} %{_xother}",
+            visible=True,
+            yaxis="y2"
+        )
+    )
+    fig_timeseries.add_trace(
+        go.Scatter(
+            x=df.time,
+            y=df.power,
+            mode="lines",
+            line=dict(
+                color='violet',
+                width=1
+            ),
+            name="power",
+            hovertemplate="%{_xother} %{_xother} %{y} %{_xother}",
+            visible=False,
+            yaxis="y3"
+        )
+    )
+    fig_timeseries.add_trace(
+        go.Scatter(
+            x=df.time,
+            y=df.heartrate,
+            mode="lines",
+            line=dict(
+                color='red',
+                width=1
+            ),
+            name="heartrate",
+            hovertemplate="%{_xother} %{_xother} %{_xother} %{y}",
+            visible=False,
+            yaxis="y4"
+        )
     )
     
     y2_scale=list(np.arange(math.floor(df.pace_smoot.min()),math.ceil(df.pace_smoot.max()),(df.pace_smoot.max()-df.pace_smoot.min())/6))
@@ -192,19 +222,64 @@ def get_graph_component(df):
         yaxis2=dict(
             fixedrange= True,
             showspikes=True,
-            spikecolor=main_color,
+            spikecolor='blue',
             showgrid=False,
             zeroline=True,
             showline=True,
             # linecolor='rgb(204, 204, 204)',
-            gridcolor='rgb(224,224,224)',
             showticklabels=True,
             # showticksuffix='last',
-            tickcolor='rgb(224,0,0)',
-            # ticksuffix=' /km',
+            tickcolor='blue',
             autorange="reversed",
             tickvals=y2_scale,
             ticktext=y2_scale_text,
+            tickfont=dict(
+                color="blue"
+            ),
+            anchor="free",
+            overlaying="y",
+            side="right",
+            autoshift=True,
+        ),
+        yaxis3=dict(
+            fixedrange= True,
+            showspikes=True,
+            spikecolor='violet',
+            showgrid=False,
+            zeroline=True,
+            showline=True,
+            # linecolor='rgb(204, 204, 204)',
+            showticklabels=False,
+            # showticksuffix='last',
+            tickcolor='violet',
+            ticksuffix=' W',
+            tickfont=dict(
+                color='violet'
+            ),
+            anchor="free",
+            overlaying="y",
+            side="right",
+            autoshift=True,
+        ),
+        yaxis4=dict(
+            fixedrange= True,
+            showspikes=True,
+            spikecolor='red',
+            showgrid=False,
+            zeroline=True,
+            showline=True,
+            # linecolor='rgb(204, 204, 204)',
+            showticklabels=False,
+            # showticksuffix='last',
+            tickcolor='red',
+            ticksuffix=' bpm',
+            tickfont=dict(
+                color='red'
+            ),
+            anchor="free",
+            overlaying="y",
+            side="right",
+            autoshift=True,
         ),
         autosize=True,
         margin=dict(
@@ -231,6 +306,7 @@ def get_graph_component(df):
 
 def get_graph_selector():
     checklist_item = dcc.Checklist(
+        id="checklist",
         options=[
             {'label': html.Div('pace', style={"display": "inline", "padding-left":"0.5rem"}), 'value': 'pace'},
             {'label': html.Div('heartrate', style={"display": "inline", "padding-left":"0.5rem"}), 'value': 'heartrate'},
@@ -301,7 +377,7 @@ def get_main_component(icon,activity,summary,aggregates,aggregates_columns,map_c
                         graph_component,
                         radio_item
                     ],
-                    style={'height': "300px",'margin-top': 10,'margin-left': 10},
+                    style={'height': "420px",'margin-top': 10,'margin-left': 10},
                 )
             ]
         )
@@ -315,7 +391,7 @@ def define_app_callback(app,df,positions_for_km,altitude_for_km,time_for_km,sett
         [
             Output("map", "children", allow_duplicate=True),
             Output('map', 'viewport', allow_duplicate=True),
-            Output("time-series", "figure"),
+            Output("time-series", "figure", allow_duplicate=True),
             Output("memory", 'data'),
         ],
         [
@@ -399,6 +475,25 @@ def define_app_callback(app,df,positions_for_km,altitude_for_km,time_for_km,sett
         lat = df.latitude[hoverData["points"][0]["pointIndex"]]
         lon = df.longitude[hoverData["points"][0]["pointIndex"]]
         return update_marker_position(fig_map,lat,lon)
+    
+    @app.callback(
+        Output("time-series", "figure"),
+        [
+            Input("checklist", "value"),
+            State("time-series", "figure"),
+        ],
+        prevent_initial_call=True,
+    )
+    def change_graph_plot(checklist_state,fig_timeseries):
+        for line in fig_timeseries["data"]:
+            if 'visible' in line and line['visible'] and not line['name'] in checklist_state:
+                line['visible']=False
+                fig_timeseries['layout'][f"yaxis{line['yaxis'].split('y')[1]}"]["showticklabels"]=False
+            elif 'visible' in line and not line['visible'] and line['name'] in checklist_state:
+                line['visible']=True
+                fig_timeseries['layout'][f"yaxis{line['yaxis'].split('y')[1]}"]["showticklabels"]=True
+        return fig_timeseries
+
 
 def init_app(main_component,df,positions_for_km,altitude_for_km,time_for_km,settings):
     app = Dash(external_stylesheets=[dbc.themes.MINTY])
