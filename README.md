@@ -11,3 +11,12 @@ https://developers.strava.com/docs/authentication/
 
 Strava API:
 https://developers.strava.com/docs/reference/
+
+
+### OPEN WEATHER MAP INTEGRATION
+
+OWM API:
+https://openweathermap.org/api/weathermaps
+
+### TILES EXAMPLE
+https://leaflet-extras.github.io/leaflet-providers/preview/index.html

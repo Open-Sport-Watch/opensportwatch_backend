@@ -4,7 +4,7 @@ import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import Output, Input, Dash, State, exceptions
 import dash_leaflet as dl
-from plotly.subplots import make_subplots
+import os
 import math
 import numpy as np
 from src.manage_fit import retrieve_positions_from_dataframe
@@ -14,6 +14,8 @@ selected_color='rgb(8,102,255)'
 selected_color_opacity='rgba(8,102,255,0.4)'
 main_text_color='rgb(24, 29, 31)'
 font_family='Montserrat,-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif'
+OWN_APP_ID = os.getenv("OWM_APP_ID","<<your_open_weather_map_appid>>")
+JAWG_APP_ID = os.getenv("JAWG_APP_ID","<<your_jswg_map_appid>>")
 
 custom_icon = dict(
     iconUrl='assets/blue_dot.png',
@@ -78,8 +80,82 @@ def get_map_component(settings,positions):
         [settings["max_latitude"],settings["max_longitude"]],
     ]
 
+    layers= dl.LayersControl(
+        [
+            dl.BaseLayer(
+                dl.TileLayer(
+                    id='map-layer',
+                    url='https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    maxZoom= 19,
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                ),
+                name = "map",
+                checked=True
+            ),
+            dl.BaseLayer(
+                dl.TileLayer(
+                    id='satellite-layer',
+                    url='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                    attribution='&copy; <a href="https://doc.arcgis.com/it/arcgis-online/reference/tile-layers.htm">ArcGIS</a>'
+                ),
+                name="satellite",
+                checked=False
+            ),
+            dl.BaseLayer(
+                dl.TileLayer(
+                    id='terrain-layer',
+                    url=f'https://{{s}}.tile.jawg.io/jawg-terrain/{{z}}/{{x}}/{{y}}{{r}}.png?access-token={JAWG_APP_ID}',
+                    attribution='&copy; <a href="https://www.jawg.io/en/">Jawg</a>'
+                ),
+                name="terrain",
+                checked=False
+            ),
+            dl.Overlay(
+                dl.TileLayer(
+                    id='snow-layer',
+                    url='https://tiles.opensnowmap.org/pistes/{z}/{x}/{y}.png',
+                    attribution='&copy; <a href="https://www.opensnowmap.org/">OpenSnow</a>'
+                ),
+                name="ski slopes",
+                checked=False
+            ),
+            dl.Overlay(
+                dl.TileLayer(
+                    id='wind-layer',
+                    url=f'https://tile.openweathermap.org/map/wind_new/{{z}}/{{x}}/{{y}}.png?appid={OWN_APP_ID}',
+                    # opacity= 0.5,
+                    attribution='&copy; <a href="https://openweathermap.org">OpenWeather</a>'
+                ),
+                name="wind",
+                checked=False
+            ),
+            dl.Overlay(
+                dl.TileLayer(
+                    id='precipitation-layer',
+                    url=f'https://tile.openweathermap.org/map/precipitation_new/{{z}}/{{x}}/{{y}}.png?appid={OWN_APP_ID}',
+                    # opacity= 0.5,
+                    attribution='&copy; <a href="https://openweathermap.org">OpenWeather</a>'
+                ),
+                name="precipitation",
+                checked=False
+            ),
+            dl.Overlay(
+                dl.TileLayer(
+                    id='sea-layer',
+                    url='https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png',
+                    # opacity= 0.5,
+                    attribution='&copy; <a href="http://www.openseamap.org">OpenSea</a>'
+                ),
+                name="sea",
+                checked=False
+            )
+        ],
+        id="lc"
+    )
+
     children = [
-        dl.TileLayer(id='map-layer'),
+        layers,
+        dl.LocateControl(id='locate',locateOptions={'enableHighAccuracy': True}),
         dl.FullScreenControl(id='screen-control'),
         dl.GestureHandling(id='gesture-control'),
         dl.Polyline(positions=positions,color=main_color,id='all-gps-track')
@@ -90,7 +166,7 @@ def get_map_component(settings,positions):
             children=children,
             style={'height': '520px',"margin-top": 10,"margin-left": 10},
             bounds=bounds,
-            attributionControl=False,
+            attributionControl=True,
             id="map"
         ),
         id="map_container"
