@@ -40,3 +40,12 @@ def get_strava_user(access_token):
         return json.loads(response.content.decode("utf-8","ignore"))
     else:
         error(response.text)
+
+def post_activity_on_strava(access_token,file_path):
+    url = f"{STRAVA_BASE_URL}/api/v3/uploads"
+    headers = {"Authorization":f"Bearer {access_token}"}
+    response = call_rest_api("POST",url,headers,files = {'file': open(file_path, 'rb')}, params={"data_type":"fit"})
+    if response.status_code==201:
+        return json.loads(response.content.decode("utf-8","ignore"))
+    else:
+        error(response.text)

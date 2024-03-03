@@ -29,18 +29,15 @@ adapter = HTTPAdapter(max_retries=retry_strategy)
 http = requests.Session()
 http.mount("https://", adapter)
 
-def call_rest_api(method,url,headers,data='',stream_cond=False,usr=None,pwd=None):
+def call_rest_api(method,url,headers,data='',files=None,params=None,stream_cond=False):
     try:
         if method == "GET":
-            if usr is None:
-                response = http.get(url, headers=headers)
-            else:
-                response = http.get(url, headers=headers, stream=stream_cond, timeout=60, auth=HTTPBasicAuth(usr, pwd))
+            response = http.get(url, headers=headers)
         elif method == "POST":
-            if usr is None:
+            if files:
+                response = http.post(url, headers=headers, files=files, params=params)
+            else:    
                 response = http.post(url, headers=headers, data=data)
-            else:
-                response = http.post(url,headers=headers, data=data, auth=HTTPBasicAuth(usr, pwd))
         elif method == "DELETE":
             response = http.delete(url, headers=headers)
         elif method == "PATCH":
