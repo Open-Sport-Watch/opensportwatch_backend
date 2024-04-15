@@ -1,0 +1,27 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+flask = "==2.3.3"
+redis = "==5.0.1"
+requests = "==2.31.0"
+garmin-fit-sdk = "==21.126.0"
+fitparse = "==1.2.0"
+dash = "==2.14.2"
+plotly = "==5.18.0"
+waitress = "==2.1.2"
+dash_ag_grid = "==2.4.0"
+dash_bootstrap_components = "==1.5.0"
+dash_leaflet = "==1.0.11"
+fit-tool = "==0.9.13"
+pandas = "==2.2.2"
+
+[dev-packages]
+flake8 = "==7.0.0"
+black = "==24.3.0"
+flake8-pyproject = "==1.2.3"
+
+[requires]
+python_version = "3.10"

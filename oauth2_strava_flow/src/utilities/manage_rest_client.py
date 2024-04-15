@@ -1,7 +1,7 @@
-import requests, sys
+import requests
+import sys
 from urllib3.util import Retry
 from requests.adapters import HTTPAdapter
-from requests.auth import HTTPBasicAuth
 from requests.exceptions import HTTPError
 
 backoff_factor = 3
@@ -22,21 +22,24 @@ retry_strategy = Retry(
     redirect=total,
     backoff_factor=backoff_factor,
     status_forcelist=[429, 500, 502, 503, 504],
-    method_whitelist=["GET","POST","DELETE","PATCH","PUT"]
+    method_whitelist=["GET", "POST", "DELETE", "PATCH", "PUT"],
 )
 
 adapter = HTTPAdapter(max_retries=retry_strategy)
 http = requests.Session()
 http.mount("https://", adapter)
 
-def call_rest_api(method,url,headers,data='',files=None,params=None,stream_cond=False):
+
+def call_rest_api(
+    method, url, headers, data="", files=None, params=None, stream_cond=False
+):
     try:
         if method == "GET":
             response = http.get(url, headers=headers)
         elif method == "POST":
             if files:
                 response = http.post(url, headers=headers, files=files, params=params)
-            else:    
+            else:
                 response = http.post(url, headers=headers, data=data)
         elif method == "DELETE":
             response = http.delete(url, headers=headers)
@@ -51,7 +54,7 @@ def call_rest_api(method,url,headers,data='',files=None,params=None,stream_cond=
     return response
 
 
-def json_safe_get(dct,fun, *keys):
+def json_safe_get(dct, fun, *keys):
     for key in keys:
         try:
             dct = dct[key]

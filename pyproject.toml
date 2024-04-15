@@ -1,0 +1,49 @@
+# pyproject.toml
+
+[tool.pytest.ini_options]
+addopts = """
+    --junitxml=report-test/report.xml
+    --cov='.'
+    --cov-report=lcov:report-cov/lcov.info
+    --cov-report=term-missing:skip-covered
+    --cov-report=xml:report-cov/coverage.xml
+"""
+# --html=report-test/report.html --cov-report=html:report-cov/html
+env = []
+
+pythonpath=["./src"]
+testpaths=["./tests"]
+
+[tool.coverage.run]
+branch = true
+relative_files = true
+source = ["./src"]
+omit = ["*test*"]
+
+[tool.coverage.report]
+# Regexes for lines to exclude from consideration
+exclude_also = [
+    # Don't complain about missing debug-only code:
+    "def __repr__",
+    "if self\\.debug",
+
+    # Don't complain if tests don't hit defensive assertion code:
+    "raise AssertionError",
+    "raise NotImplementedError",
+
+    # Don't complain if non-runnable code isn't run:
+    "if 0:",
+    "if __name__ == .__main__.:",
+
+    # Don't complain about abstract methods, they aren't run:
+    "@(abc\\.)?abstractmethod",
+    ]
+ignore_errors = true
+
+[tool.flake8]
+ignore = ['E501','W503','E203']
+per-file-ignores = [
+    '__init__.py:F401',
+]
+max-line-length = 100
+count = true

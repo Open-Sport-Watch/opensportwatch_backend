@@ -1,13 +1,18 @@
-import time, os, sys
+import time
+import sys
 import logging
 import logging.handlers
+
 
 def log_setup(file_path):
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
     # create formatter
-    formatter = logging.Formatter('[%(asctime)s,%(msecs)03d] [%(name)s] [%(levelname)s] %(message)s','%Y-%m-%d %H:%M:%S')
+    formatter = logging.Formatter(
+        "[%(asctime)s,%(msecs)03d] [%(name)s] [%(levelname)s] %(message)s",
+        "%Y-%m-%d %H:%M:%S",
+    )
     formatter.converter = time.gmtime  # if you want UTC time
 
     # add stout
@@ -21,22 +26,25 @@ def log_setup(file_path):
     logger.addHandler(log_handler_file)
 
     # manage external logging
-    logging.getLogger('timeloop').propagate = False
+    logging.getLogger("timeloop").propagate = False
 
-def info (msg,app=''):
+
+def info(msg, app=""):
     if app:
-        logging.getLogger(f'{app}').info(msg)
+        logging.getLogger(f"{app}").info(msg)
     else:
         logging.info(msg)
 
-def warn (msg,app=''):
+
+def warn(msg, app=""):
     if app:
-        logging.getLogger(f'{app}').warning(msg)
+        logging.getLogger(f"{app}").warning(msg)
     else:
         logging.warning(msg)
 
-def error (msg,app=''):
+
+def error(msg, app=""):
     if app:
-        logging.getLogger(f'{app}').error(msg)
+        logging.getLogger(f"{app}").error(msg)
     else:
         logging.error(msg)
