@@ -70,7 +70,6 @@ def main(path_fit_files):
             )
             builder.add(message)
 
-            # Every FIT course file MUST contain a Activity message
             sport = extract_data_message_from_key("sport", import_messages, "first")
             message = SportMessage()
             message.sport_name = extract_subfield_from_key(
@@ -143,11 +142,11 @@ def main(path_fit_files):
                 "start_time", lap.fields, "timestamp"
             )
             message.total_elapsed_time = extract_subfield_from_key(
-                "total_elapsed_time", lap.fields, "raw_value"
+                "total_elapsed_time", lap.fields, "value"
             )
 
             message.total_timer_time = extract_subfield_from_key(
-                "total_timer_time", lap.fields, "raw_value"
+                "total_timer_time", lap.fields, "value"
             )
             message.start_position_lat = extract_subfield_from_key(
                 "start_position_lat", lap.fields, "gps"
