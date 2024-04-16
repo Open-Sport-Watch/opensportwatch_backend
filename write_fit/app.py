@@ -1,203 +1,184 @@
 import datetime
-
 from fit_tool.fit_file_builder import FitFileBuilder
-from fit_tool.profile.messages.activity_message import ActivityMessage
+from fit_tool.profile.messages.sport_message import SportMessage
 from fit_tool.profile.messages.event_message import EventMessage
 from fit_tool.profile.messages.file_id_message import FileIdMessage
 from fit_tool.profile.messages.lap_message import LapMessage
 from fit_tool.profile.messages.record_message import RecordMessage
-
 import fitparse
 
 
-def main():
-    fitfile = fitparse.FitFile("plot_fit_activity/resources/Morning_Run_step1.fit")
-    import_messages = fitfile.messages
+def extract_data_message_from_key(key, data_message_list, filt="all"):
+    return_value = list(
+        filter(lambda mess: mess.def_mesg.name == key, data_message_list)
+    )
+    if filt == "first":
+        return_value = return_value[0]
+
+    return return_value
+
+
+def extract_subfield_from_key(key, data_message_list, value=None):
+    return_value = list(
+        filter(lambda mess: mess.field_def.name == key, data_message_list)
+    )[0]
+    if value == "raw_value":
+        return_value = return_value.raw_value
+    elif value == "value":
+        return_value = return_value.value
+    elif value == "timestamp":
+        return_value = round(
+            return_value.value.replace(tzinfo=datetime.timezone.utc).timestamp() * 1000
+        )
+    elif value == "gps":
+        return_value = (
+            return_value.raw_value * (180 / 2**31)
+            if return_value.raw_value is not None
+            else None
+        )
+    return return_value
+
+
+def main(path_fit_files):
+
+    previous_activity_distance = 0
 
     # Set auto_define to true, so that the builder creates the required Definition Messages for us.
     builder = FitFileBuilder(auto_define=True, min_string_size=50)
 
-    # Read position data from a GPX file
-    # gpx_file = open('../tests/data/old_stage_left_hand_lee.gpx', 'r')
-    # gpx = gpxpy.parse(gpx_file)
+    for xx, path in enumerate(path_fit_files):
 
-    message = FileIdMessage()
+        import_messages = fitparse.FitFile(path).messages
 
-    file_id = list(
-        filter(lambda mess: mess.def_mesg.name == "file_id", import_messages)
-    )[0]
-    message.type = list(
-        filter(lambda mess: mess.field_def.name == "type", file_id.fields)
-    )[0].raw_value
-    message.manufacturer = list(
-        filter(lambda mess: mess.field_def.name == "manufacturer", file_id.fields)
-    )[0].raw_value
-    message.product = list(
-        filter(lambda mess: mess.field_def.name == "product", file_id.fields)
-    )[0].raw_value
-    message.timeCreated = round(
-        list(
-            filter(lambda mess: mess.field_def.name == "time_created", file_id.fields)
-        )[0]
-        .value.replace(tzinfo=datetime.timezone.utc)
-        .timestamp()
-        * 1000
-    )
-    message.serialNumber = list(
-        filter(lambda mess: mess.field_def.name == "serial_number", file_id.fields)
-    )[0].raw_value
-    builder.add(message)
+        if xx == 0:
+            file_id = extract_data_message_from_key("file_id", import_messages, "first")
+            message = FileIdMessage()
+            message.type = extract_subfield_from_key(
+                "type", file_id.fields, "raw_value"
+            )
+            message.manufacturer = extract_subfield_from_key(
+                "manufacturer", file_id.fields, "raw_value"
+            )
+            message.product = extract_subfield_from_key(
+                "product", file_id.fields, "raw_value"
+            )
+            message.time_created = extract_subfield_from_key(
+                "time_created", file_id.fields, "timestamp"
+            )
+            message.serial_number = extract_subfield_from_key(
+                "serial_number", file_id.fields, "raw_value"
+            )
+            builder.add(message)
 
-    # Every FIT course file MUST contain a Activity message
-    message = ActivityMessage()
+            # Every FIT course file MUST contain a Activity message
+            sport = extract_data_message_from_key("sport", import_messages, "first")
+            message = SportMessage()
+            message.sport_name = extract_subfield_from_key(
+                "name", sport.fields, "raw_value"
+            )
+            message.sport = extract_subfield_from_key(
+                "sport", sport.fields, "raw_value"
+            )
+            message.sub_sport = extract_subfield_from_key(
+                "sub_sport", sport.fields, "raw_value"
+            )
+            builder.add(message)
 
-    sport = list(filter(lambda mess: mess.def_mesg.name == "sport", import_messages))[0]
-    message.activityName = list(
-        filter(lambda mess: mess.field_def.name == "name", sport.fields)
-    )[0].raw_value
-    message.sport = list(
-        filter(lambda mess: mess.field_def.name == "sport", sport.fields)
-    )[0].raw_value
-    builder.add(message)
+        events = extract_data_message_from_key("event", import_messages)
+        activities_events = []
+        for event in events:
+            message = EventMessage()
+            message.event = extract_subfield_from_key(
+                "event", event.fields, "raw_value"
+            )
+            message.event_type = extract_subfield_from_key(
+                "event_type", event.fields, "raw_value"
+            )
+            message.timestamp = extract_subfield_from_key(
+                "timestamp", event.fields, "timestamp"
+            )
+            activities_events.append(message)
+        builder.add_all(activities_events)
 
-    # Timer Events are REQUIRED for FIT course files
-    # start_timestamp = round(datetime.datetime.now().timestamp() * 1000)
+        records = extract_data_message_from_key("record", import_messages)
+        activities_records = []  # track points
+        for record in records:
+            message = RecordMessage()
+            message.position_lat = extract_subfield_from_key(
+                "position_lat", record.fields, "gps"
+            )
+            message.position_long = extract_subfield_from_key(
+                "position_long", record.fields, "gps"
+            )
+            distance = extract_subfield_from_key("distance", record.fields, "value")
+            message.distance = distance + previous_activity_distance
 
-    events = list(filter(lambda mess: mess.def_mesg.name == "event", import_messages))
-    activities_events = []
-    for event in events:
-        message = EventMessage()
-        message.event = list(filter(lambda mess: mess.name == "event", event.fields))[
-            0
-        ].raw_value  # Event.TIMER
-        message.event_type = list(
-            filter(lambda mess: mess.name == "event_type", event.fields)
-        )[
-            0
-        ].raw_value  # EventType.START
-        message.timestamp = round(
-            list(filter(lambda mess: mess.name == "timestamp", event.fields))[0]
-            .value.replace(tzinfo=datetime.timezone.utc)
-            .timestamp()
-            * 1000
-        )
-        activities_events.append(message)
-    builder.add_all(activities_events)
+            message.enhanced_altitude = extract_subfield_from_key(
+                "enhanced_altitude", record.fields, "value"
+            )
+            message.enhanced_speed = extract_subfield_from_key(
+                "enhanced_speed", record.fields, "value"
+            )
+            message.heart_rate = extract_subfield_from_key(
+                "heart_rate", record.fields, "raw_value"
+            )
+            message.power = extract_subfield_from_key(
+                "power", record.fields, "raw_value"
+            )
+            message.timestamp = extract_subfield_from_key(
+                "timestamp", record.fields, "timestamp"
+            )
+            activities_records.append(message)
+        previous_activity_distance = message.distance
+        builder.add_all(activities_records)
 
-    records = list(filter(lambda mess: mess.def_mesg.name == "record", import_messages))
-    activities_records = []  # track points
-    for record in records:
-        message = RecordMessage()
-        message.position_lat = list(
-            filter(lambda mess: mess.name == "position_lat", record.fields)
-        )[0].raw_value * (180 / 2**31)
-        message.position_long = list(
-            filter(lambda mess: mess.name == "position_long", record.fields)
-        )[0].raw_value * (180 / 2**31)
-        message.distance = list(
-            filter(lambda mess: mess.name == "distance", record.fields)
-        )[0].value
-        message.enhanced_altitude = list(
-            filter(lambda mess: mess.name == "enhanced_altitude", record.fields)
-        )[0].value
-        message.enhanced_speed = list(
-            filter(lambda mess: mess.name == "enhanced_speed", record.fields)
-        )[0].value
-        message.heart_rate = list(
-            filter(lambda mess: mess.name == "heart_rate", record.fields)
-        )[0].raw_value
-        message.power = list(filter(lambda mess: mess.name == "power", record.fields))[
-            0
-        ].raw_value
-        message.timestamp = round(
-            list(filter(lambda mess: mess.name == "timestamp", record.fields))[0]
-            .value.replace(tzinfo=datetime.timezone.utc)
-            .timestamp()
-            * 1000
-        )
-        activities_records.append(message)
-    builder.add_all(activities_records)
+        laps = extract_data_message_from_key("lap", import_messages)
+        activities_laps = []
+        for lap in laps:
+            message = LapMessage()
+            message.timestamp = extract_subfield_from_key(
+                "timestamp", lap.fields, "timestamp"
+            )
+            message.start_time = extract_subfield_from_key(
+                "start_time", lap.fields, "timestamp"
+            )
+            message.total_elapsed_time = extract_subfield_from_key(
+                "total_elapsed_time", lap.fields, "raw_value"
+            )
 
-    #  Add start and end course points (i.e. way points)
-    #
-    # message = CoursePointMessage()
-    # message.timestamp = course_records[0].timestamp
-    # message.position_lat = course_records[0].position_lat
-    # message.position_long = course_records[0].position_long
-    # message.type = CoursePoint.SEGMENT_START
-    # message.course_point_name = 'start'
-    # builder.add(message)
-
-    # message = CoursePointMessage()
-    # message.timestamp = course_records[-1].timestamp
-    # message.position_lat = course_records[-1].position_lat
-    # message.position_long = course_records[-1].position_long
-    # message.type = CoursePoint.SEGMENT_END
-    # message.course_point_name = 'end'
-    # builder.add(message)
-
-    # # stop event
-    # message = EventMessage()
-    # message.event = Event.TIMER
-    # message.eventType = EventType.STOP_ALL
-    # message.timestamp = timestamp
-    # builder.add(message)
-
-    # Every FIT course file MUST contain a Lap message
-    # elapsed_time = timestamp - start_timestamp
-
-    laps = list(filter(lambda mess: mess.def_mesg.name == "lap", import_messages))
-    activities_laps = []
-    for lap in laps:
-        message = LapMessage()
-        message.timestamp = round(
-            list(filter(lambda mess: mess.name == "timestamp", lap.fields))[0]
-            .value.replace(tzinfo=datetime.timezone.utc)
-            .timestamp()
-            * 1000
-        )  # timestamp
-        message.start_time = round(
-            list(filter(lambda mess: mess.name == "start_time", lap.fields))[0]
-            .value.replace(tzinfo=datetime.timezone.utc)
-            .timestamp()
-            * 1000
-        )  # start_timestamp
-        message.total_elapsed_time = list(
-            filter(lambda mess: mess.name == "total_elapsed_time", lap.fields)
-        )[
-            0
-        ].raw_value  # elapsed_time
-        message.total_timer_time = list(
-            filter(lambda mess: mess.name == "total_timer_time", lap.fields)
-        )[
-            0
-        ].raw_value  # elapsed_time
-        message.start_position_lat = list(
-            filter(lambda mess: mess.name == "start_position_lat", lap.fields)
-        )[0].raw_value * (180 / 2**31)
-        message.start_position_long = list(
-            filter(lambda mess: mess.name == "start_position_long", lap.fields)
-        )[0].raw_value * (180 / 2**31)
-        message.end_position_lat = list(
-            filter(lambda mess: mess.name == "end_position_lat", lap.fields)
-        )[0].raw_value * (180 / 2**31)
-        message.end_position_long = list(
-            filter(lambda mess: mess.name == "end_position_long", lap.fields)
-        )[0].raw_value * (180 / 2**31)
-        message.total_distance = list(
-            filter(lambda mess: mess.name == "total_distance", lap.fields)
-        )[0].value
-        activities_laps.append(message)
-    builder.add_all(activities_laps)
+            message.total_timer_time = extract_subfield_from_key(
+                "total_timer_time", lap.fields, "raw_value"
+            )
+            message.start_position_lat = extract_subfield_from_key(
+                "start_position_lat", lap.fields, "gps"
+            )
+            message.start_position_long = extract_subfield_from_key(
+                "start_position_long", lap.fields, "gps"
+            )
+            message.end_position_lat = extract_subfield_from_key(
+                "end_position_lat", lap.fields, "gps"
+            )
+            message.end_position_long = extract_subfield_from_key(
+                "end_position_long", lap.fields, "gps"
+            )
+            message.total_distance = extract_subfield_from_key(
+                "total_distance", lap.fields, "value"
+            )
+            activities_laps.append(message)
+        builder.add_all(activities_laps)
 
     # Finally build the FIT file object and write it to a file
     fit_file = builder.build()
 
-    out_path = "write_fit/tests/old_stage_course.fit"
+    out_path = "write_fit/tests/join_activities.fit"
     fit_file.to_file(out_path)
     # csv_path = '../tests/out/old_stage_course.csv'
     # fit_file.to_csv(csv_path)
 
 
 if __name__ == "__main__":
-    main()
+    fit_files = [
+        "plot_fit_activity/resources/Morning_Run_step1.fit",
+        "plot_fit_activity/resources/Morning_Run_step2.fit",
+    ]
+    main(fit_files)

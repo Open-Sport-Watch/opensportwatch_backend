@@ -12,7 +12,7 @@ from src.manage_ui_component import (
 # file_name = "plot_fit_activity/resources/Morning_Run_Garmin.fit"
 # file_name = "plot_fit_activity/resources/Morning_Trail_Run.fit"
 # file_name = "plot_fit_activity/resources/Pesaro-Cattolica.fit"
-file_name = "plot_fit_activity/resources/old_stage_course.fit"
+file_name = "plot_fit_activity/resources/join_activities.fit"
 
 (
     df,
