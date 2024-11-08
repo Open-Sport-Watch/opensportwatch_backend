@@ -5,9 +5,16 @@ import json
 import os
 
 STRAVA_BASE_URL = "https://www.strava.com"
+CLIENT_ID = None
+CLIENT_SECRET = None
+CLUB_ID = None
 
-CLIENT_ID = os.getenv("CLIENT_ID", "<<your_client_id>>")
-CLIENT_SECRET = os.getenv("CLIENT_SECRET", "<<your_client_secret>>")
+
+def init_strava_params():
+    global CLIENT_ID, CLIENT_SECRET, CLUB_ID
+    CLIENT_ID = os.getenv("CLIENT_ID", "<<your_client_id>>")
+    CLIENT_SECRET = os.getenv("CLIENT_SECRET", "<<your_client_secret>>")
+    CLUB_ID = os.getenv("CLUB_ID", "<<your_club_id>>")
 
 
 def strava_auth_on_browser(REDIRECT_URI):
@@ -47,7 +54,6 @@ def get_strava_user(access_token):
 
 
 def get_strava_club_activities(access_token):
-    CLUB_ID = os.getenv("CLUB_ID", "<<your_club_id>>")
     retrieve_all = False
     page = 1
     activities_list = []

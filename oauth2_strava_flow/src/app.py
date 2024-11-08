@@ -12,6 +12,7 @@ from utilities.manage_strava_api import (
     get_strava_user,
     # post_activity_on_strava,
     get_strava_club_activities,
+    init_strava_params,
 )
 import os
 import time
@@ -23,8 +24,9 @@ load_dotenv(os.path.join(ntpath.dirname(os.path.realpath(__file__)), ".env"))
 
 REDIRECT_PORT = 3000
 REDIRECT_URI = f"http://localhost:{REDIRECT_PORT}/redirect"
-ATHLETE_ID = os.environ["ATHLETE_ID"]
+ATHLETE_ID = os.getenv("ATHLETE_ID", "<<your_athele_id>>")
 
+init_strava_params()
 redis_cli = check_redis_conn()
 
 if not check_user_already_exist(ATHLETE_ID):
