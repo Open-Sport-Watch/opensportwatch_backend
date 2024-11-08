@@ -15,12 +15,15 @@ from utilities.manage_strava_api import (
 )
 import os
 import time
+from dotenv import load_dotenv
+import ntpath
 
 log_setup("log.txt")
+load_dotenv(os.path.join(ntpath.dirname(os.path.realpath(__file__)), ".env"))
 
 REDIRECT_PORT = 3000
 REDIRECT_URI = f"http://localhost:{REDIRECT_PORT}/redirect"
-ATHLETE_ID = os.getenv("ATHLETE_ID")
+ATHLETE_ID = os.environ["ATHLETE_ID"]
 
 redis_cli = check_redis_conn()
 

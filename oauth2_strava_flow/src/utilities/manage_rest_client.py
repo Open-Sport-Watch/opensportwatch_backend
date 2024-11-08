@@ -22,7 +22,7 @@ retry_strategy = Retry(
     redirect=total,
     backoff_factor=backoff_factor,
     status_forcelist=[429, 500, 502, 503, 504],
-    method_whitelist=["GET", "POST", "DELETE", "PATCH", "PUT"],
+    allowed_methods=["GET", "POST", "DELETE", "PATCH", "PUT"],
 )
 
 adapter = HTTPAdapter(max_retries=retry_strategy)
